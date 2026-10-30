@@ -2,8 +2,8 @@
 # Interactive Linux bootstrap; application source stays pinned to a verified release.
 set -Eeuo pipefail
 
-VERSION=v0.1.1
-SOURCE_COMMIT=db9efde7862d54152712c72806b2ea84e56e8e1a
+VERSION=v0.1.2
+SOURCE_COMMIT=7150f5f2383e9f52a1d77d68041b8b2aba200745
 REPOSITORY=https://github.com/TeaMazal/Mazal-Image.git
 SITE_NAME='Mazal Image'
 PROJECT=mazal-image

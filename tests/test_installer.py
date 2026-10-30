@@ -29,14 +29,14 @@ with open(os.environ['MI_CHECK_LOG'], 'a') as log:
     log.write(json.dumps([command, *args]) + '\\n')
 if command == 'git':
     if args[:1] == ['clone']:
-        assert args[1:-1] == ['--depth', '1', '--branch', 'v0.1.1', '--', 'https://github.com/TeaMazal/Mazal-Image.git']
+        assert args[1:-1] == ['--depth', '1', '--branch', 'v0.1.2', '--', 'https://github.com/TeaMazal/Mazal-Image.git']
         dest = pathlib.Path(args[-1])
         (dest / 'scripts').mkdir(parents=True)
         (dest / 'backend').mkdir()
         for name in ('scripts/init_site.py', 'backend/site_config.py'):
             shutil.copyfile(pathlib.Path(os.environ['MI_CHECK_SOURCE']) / name, dest / name)
     elif len(args) == 4 and args[0] == '-C' and args[2:] == ['rev-parse', 'HEAD']:
-        print(os.environ.get('MI_CHECK_COMMIT', 'db9efde7862d54152712c72806b2ea84e56e8e1a'))
+        print(os.environ.get('MI_CHECK_COMMIT', '7150f5f2383e9f52a1d77d68041b8b2aba200745'))
     else:
         raise SystemExit('unexpected Git operation')
 elif command == 'docker':
