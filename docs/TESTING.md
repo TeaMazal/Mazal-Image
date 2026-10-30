@@ -48,6 +48,15 @@ Windows 已安装 Edge 时，可在 PowerShell 使用 `$env:MI_TEST_BROWSER='mse
 
 ## 后端隔离单元与接口检查
 
+安装器在 Linux 中使用替代 Git/Docker/curl 的隔离命令测试，不安装真实服务；以 root 运行只为覆盖初始化时的目录所有权处理：
+
+```bash
+bash -n scripts/install.sh
+sudo python3 tests/test_installer.py
+```
+
+覆盖双站独立密钥、不覆盖目录、项目和端口冲突、参数校验、源码提交不符、构建失败、输入作为字面值、继承环境隔离，以及管道输入脚本时从终端读取配置。CI 同时从实际源码构建镜像；安装器测试不代替新主机 Docker 安装和正式域名验收。
+
 先从根目录构建镜像，再使用 Linux Docker 运行下列命令。Compose backend 自身不映射宿主机端口；额外测试进程关闭外网，只使用自身 loopback 模拟主站。
 
 ```bash

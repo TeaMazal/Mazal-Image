@@ -27,6 +27,20 @@
 
 需要 Linux、Docker Engine、Docker Compose v2、Python 3，首次构建需要访问 npm、PyPI 和基础镜像仓库。建议至少 4 GiB 可用内存与 8 GiB 可用磁盘，实际需求随账号池和访问量变化。首次构建的依赖缓存也占磁盘。
 
+### 一条命令安装
+
+在目标 Linux 服务器的 SSH 终端执行（需要 curl）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TeaMazal/Mazal-Image/main/scripts/install.sh | sudo bash
+```
+
+安装器从终端询问绘图域名、主站地址、站名、项目名、目录和端口，下载固定的 v0.1.1 稳定版并核对提交，生成独立密钥，构建并启动容器，完成本机健康检查。拒绝已有目录、已使用的 Compose 项目名和端口；安装盘可用空间不足 8 GiB 时停止。已有 Docker 不会重装或升级；缺少 Docker 时询问是否使用官方安装脚本，Debian/Ubuntu 缺少 git/Python/curl 时可确认安装所需依赖。
+
+DNS、HTTPS 反代、账号导入和主站图片渠道仍需站主配置。当前安装器在 main 分支维护，安装的应用源码固定为 v0.1.1；不是升级脚本，失败后保留新目录供排查，不能直接在该目录重复初始化。无人值守参数及操作边界见 [安装器说明](docs/INSTALL.md)。
+
+### 手动安装
+
 将源码解压到一个新的目录，然后运行：
 
 ```bash
