@@ -82,8 +82,8 @@ python3 tests/test_init_site.py
 ## 打包检查
 
 ```bash
-python3 scripts/source_archive.py --output ../Mazal-Image-v0.1.0.tar.gz
-python3 scripts/source_archive.py --output ../Mazal-Image-v0.1.0.zip
+python3 scripts/source_archive.py --output ../Mazal-Image-v0.1.1.tar.gz
+python3 scripts/source_archive.py --output ../Mazal-Image-v0.1.1.zip
 ```
 
 工具从白名单导出，排除状态、凭据、编译产物与日志，生成每个源码文件的 SHA-256 清单。可用 `--forbid-value` 增加本部署的私有标记；命中时只报告文件名。还应人工复查示例、文档、锁文件、图片素材和 Git 历史，不能把扫描当作绝对保证。

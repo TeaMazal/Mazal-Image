@@ -3,7 +3,7 @@ on: [push, pull_request]
 permissions: {contents: read}
 jobs:
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run: {working-directory: frontend}
     steps:
@@ -15,7 +15,7 @@ jobs:
       - run: npm test
       - run: node ../tests/test_embedded_workbench.mjs
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
