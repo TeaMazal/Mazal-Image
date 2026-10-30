@@ -1,0 +1,50 @@
+{
+  "browser": "firefox",
+  "checks": [
+    {
+      "name": "独立页登录并建立 Service Worker 缓存",
+      "milliseconds": 1178
+    },
+    {
+      "name": "缓存预热后的嵌入首次连接",
+      "milliseconds": 418
+    },
+    {
+      "name": "主站整页连续刷新 5 次",
+      "milliseconds": 2497
+    },
+    {
+      "name": "仅刷新绘图子页面连续 3 次",
+      "milliseconds": 916
+    },
+    {
+      "name": "手动重新连接 2 次",
+      "milliseconds": 623
+    },
+    {
+      "name": "子页面迟到加载时有界重连恢复",
+      "milliseconds": 5986
+    },
+    {
+      "name": "生成中刷新恢复且不重复提交",
+      "milliseconds": 5162
+    },
+    {
+      "name": "嵌入不持久化密钥且 URL 不含票据",
+      "milliseconds": 5
+    },
+    {
+      "name": "独立页作品保留及余额显示",
+      "milliseconds": 415
+    },
+    {
+      "name": "手机宽度首次进入和刷新",
+      "milliseconds": 564
+    }
+  ],
+  "pageErrors": [],
+  "passed": true,
+  "browserVersion": "146.0.1",
+  "mockGenerations": 1,
+  "browserSubmissions": 1
+}

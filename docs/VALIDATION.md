@@ -36,7 +36,7 @@
 
 回归先从独立页登录并激活 Service Worker，再验证缓存预热后的嵌入：主站整页刷新 5 次、子页自身刷新 3 次、手动重连 2 次、首次导航失败恢复、生成中刷新、作品恢复、余额、URL/本地存储隔离和 390×844 手机宽度。Edge 与 Firefox 各 10 组场景全部通过；每个浏览器的生成中刷新检查，浏览器提交与模拟网关生成计数均只增加 1，未出现页面脚本异常。原界面工具中的空白现象未在这两种独立浏览器的完整回归中复现，不能据此推断所有扩展或已有浏览器配置均不存在问题。
 
-Edge 在 Windows 临时浏览器配置中执行；Firefox 的 Windows 发行程序未能启动，转用官方 `mcr.microsoft.com/playwright:v1.58.2-noble` Linux 容器执行，完成后清理容器与镜像。Firefox 结果代表 Linux Firefox，不代表 Windows Firefox；CI 已配置 Chromium/Firefox 的同套检查，但尚未公开推送或触发远端 CI。
+Edge 在 Windows 临时浏览器配置中执行；Firefox 的 Windows 发行程序未能启动，转用官方 `mcr.microsoft.com/playwright:v1.58.2-noble` Linux 容器执行，完成后清理容器与镜像。Firefox 结果代表 Linux Firefox，不代表 Windows Firefox；GitHub Actions 已在 Ubuntu 24.04 完成 Chromium/Firefox 的同套检查，两个浏览器各 10 组场景通过，报告见 validation/ci-chromium.json 与 validation/ci-firefox.json。
 
 ## 范围限制
 
@@ -47,3 +47,11 @@ Edge 在 Windows 临时浏览器配置中执行；Firefox 的 Windows 发行程�
 ## 分发检查
 
 源码工具以白名单导出并排除 `.git`、生产 `.env`、state、backups、日志、数据库、账号池、私钥、构建产物与 node_modules。输出 ZIP/TAR.GZ 及逐文件 SHA-256 清单，便于在另一站解压后重新初始化。公开发布前仍须核对上游用途限制声明，见 NOTICE.md。
+
+## 公开仓库自动验收
+
+v0.1.1 将 Actions 运行器固定为 Ubuntu 24.04，解决 ubuntu-latest 升级后 Playwright 1.58.2 安装系统依赖失败的问题。2026-10-30，源码提交 `dcf7cf285ed13409dac23f4a7147eec9d1b362bc` 的前端、后端、Docker 构建、模拟接口测试、Chromium 与 Firefox 回归、源码白名单打包均通过。
+
+完整执行记录：https://github.com/TeaMazal/Mazal-Image/actions/runs/41025932137
+
+该执行验证上述源码提交；随后只追加本验收记录与两份浏览器 JSON 报告，未改变应用程序或构建配置。首次 v0.1.0 的失败执行保留在 Actions 历史中，不应将其误认为修正版仍然失败。
