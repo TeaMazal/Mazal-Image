@@ -500,6 +500,16 @@ class CustomerGateway:
             identity = await asyncio.to_thread(local_identity, token)
             if identity:
                 context['identity'] = identity
+                # Local credentials power the drawing engine, never a chat provider.
+                # Keep model synchronization from advertising upstream chat models.
+                if path.startswith('/v1/'):
+                    if path == '/v1/models' and scope['method'] in ('GET', 'HEAD'):
+                        return await JSONResponse({'object': 'list', 'data': [
+                            {'id': 'gpt-image-2', 'object': 'model', 'created': 0, 'owned_by': 'mazal-image'}
+                        ]})(scope, receive, send)
+                    if path not in ('/v1/images/generations', '/v1/images/edits'):
+                        return await JSONResponse({'detail': {'error': '此引擎仅提供图片生成和编辑'}},
+                            status_code=404)(scope, receive, send)
                 if path == '/api/customer-balance' and scope['method'] == 'GET':
                     return await JSONResponse({'source': 'local'},
                         headers={'Cache-Control': 'no-store'})(scope, receive, send)

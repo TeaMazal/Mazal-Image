@@ -424,6 +424,39 @@ class GatewayIntegrationTests(unittest.TestCase):
         self.assertEqual(asyncio.run(request('/v1/models', config.auth_key, engine=True))[0], 200)
         self.assertEqual(len(SEEN), before)
 
+    def test_local_engine_only_advertises_image_model(self):
+        before = len(SEEN)
+        with patch.object(integration.app, 'engine', side_effect=AssertionError('Must not query upstream model catalog')):
+            for marked in (False, True):
+                code, body, headers = asyncio.run(request('/v1/models', config.auth_key,
+                    engine=marked, return_headers=True))
+                self.assertEqual(code, 200)
+                self.assertEqual([model['id'] for model in body['data']], ['gpt-image-2'])
+                self.assertEqual(headers[b'cache-control'], b'no-store')
+        self.assertEqual(len(SEEN), before)
+
+    def test_local_engine_rejects_chat_before_reading_body_or_calling_upstream(self):
+        before = len(SEEN)
+        with patch.object(integration.app, 'engine', side_effect=AssertionError('Must not invoke chat engine')):
+            for marked in (False, True):
+                for path in ('/v1/chat/completions', '/v1/responses', '/v1/messages', '/v1/search'):
+                    code, _ = asyncio.run(request(path, config.auth_key, 'POST',
+                        {'model': 'gpt-6'}, engine=marked, forbid_body=True))
+                    self.assertEqual(code, 404)
+        self.assertEqual(len(SEEN), before)
+
+    def test_local_engine_image_routes_remain_reachable(self):
+        reached = []
+        async def image_engine(scope, receive, send):
+            reached.append(scope['path'])
+            await integration.JSONResponse({'image_route_reached': True})(scope, receive, send)
+        with patch.object(integration.app, 'engine', image_engine):
+            for path in ('/v1/images/generations', '/v1/images/edits'):
+                code, body = asyncio.run(request(path, config.auth_key, 'POST',
+                    {'model': 'gpt-image-2', 'prompt': 'test'}, engine=True))
+                self.assertEqual((code, body['image_route_reached']), (200, True))
+        self.assertEqual(reached, ['/v1/images/generations', '/v1/images/edits'])
+
     def test_gateway_task_is_billed_once_and_never_persists_customer_key(self):
         path = Path('/tmp/gateway-test-tasks.json')
         path.unlink(missing_ok=True)
