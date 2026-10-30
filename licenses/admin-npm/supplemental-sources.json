@@ -1,0 +1,59 @@
+[
+  {
+    "name": "@img/sharp-libvips-linux-x64",
+    "version": "1.2.4",
+    "source": "https://raw.githubusercontent.com/lovell/sharp-libvips/v1.2.4/LICENSE"
+  },
+  {
+    "name": "@img/sharp-libvips-linuxmusl-x64",
+    "version": "1.2.4",
+    "source": "https://raw.githubusercontent.com/lovell/sharp-libvips/v1.2.4/LICENSE"
+  },
+  {
+    "name": "@next/env",
+    "version": "16.2.3",
+    "source": "next@16.2.3/license.md in the same locked build (Vercel MIT)"
+  },
+  {
+    "name": "@next/swc-linux-x64-gnu",
+    "version": "16.2.3",
+    "source": "next@16.2.3/license.md in the same locked build (Vercel MIT)"
+  },
+  {
+    "name": "@next/swc-linux-x64-musl",
+    "version": "16.2.3",
+    "source": "next@16.2.3/license.md in the same locked build (Vercel MIT)"
+  },
+  {
+    "name": "client-only",
+    "version": "0.0.1",
+    "source": "next@16.2.3/license.md in the same locked build (Vercel MIT)"
+  },
+  {
+    "name": "react-remove-scroll-bar",
+    "version": "2.3.8",
+    "source": "https://raw.githubusercontent.com/theKashey/react-remove-scroll-bar/master/LICENSE"
+  },
+  {
+    "name": "agent-base",
+    "version": "6.0.2",
+    "source": "https://raw.githubusercontent.com/TooTallNate/proxy-agents/main/packages/agent-base/LICENSE",
+    "note": "MIT license from current upstream package source; npm tarball omits text"
+  },
+  {
+    "name": "https-proxy-agent",
+    "version": "5.0.1",
+    "source": "https://raw.githubusercontent.com/TooTallNate/proxy-agents/main/packages/https-proxy-agent/LICENSE",
+    "note": "MIT license from current upstream package source; npm tarball omits text"
+  },
+  {
+    "name": "@img/sharp-libvips-linux-x64",
+    "source": "https://raw.githubusercontent.com/libvips/libvips/v8.17.3/LICENSE",
+    "note": "LGPL text for bundled libvips 8.17.3; separate from Apache sharp-libvips build scripts"
+  },
+  {
+    "name": "@img/sharp-libvips-linuxmusl-x64",
+    "source": "https://raw.githubusercontent.com/libvips/libvips/v8.17.3/LICENSE",
+    "note": "LGPL text for bundled libvips 8.17.3; separate from Apache sharp-libvips build scripts"
+  }
+]

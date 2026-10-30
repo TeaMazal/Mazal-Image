@@ -1,0 +1,19 @@
+{
+  "name": "Mazal Image",
+  "version": "0.1.0",
+  "date": "2026-10-30",
+  "frontend": {
+    "upstream": "https://github.com/CookSleep/gpt_image_playground",
+    "version": "0.8.3",
+    "base_commit_from_integration_record": "bbddad706145f05e0b84946e1474b66707959747"
+  },
+  "engine": {
+    "upstream": "https://github.com/basketikun/chatgpt2api",
+    "version": "1.8.0",
+    "runtime_image": "ghcr.io/basketikun/chatgpt2api@sha256:fbee934fd5363ef6ce5f7632df854f87c770e382bf0f874f8c59372eeded6aab",
+    "program_source_archive_sha256": "49b69ce8dc5007d5e4d87424ce00b572f8765dcdaa7922a616c34547b7ac475e",
+    "snapshot_scope": ["main.py", "pyproject.toml", "uv.lock", "VERSION", "api", "services", "utils", "scripts"],
+    "distribution_changes": ["configurable data/config paths", "site gateway integration", "bounded maintenance", "admin build CPU limit"]
+  },
+  "secrets_or_production_data_included": false
+}

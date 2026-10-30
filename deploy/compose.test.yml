@@ -1,0 +1,15 @@
+# Use only in an empty test checkout initialized with the localhost test origins.
+services:
+  mock:
+    image: python:3.13-slim
+    command: [python, /test/tests/mock_gateway.py]
+    volumes:
+      - .:/test:ro
+    ports:
+      - 127.0.0.1:${MI_TEST_MAIN_PORT:-8340}:8080
+    networks: [internal, egress]
+    read_only: true
+    environment: {PYTHONDONTWRITEBYTECODE: "1"}
+    security_opt: [no-new-privileges:true]
+  backend:
+    depends_on: [mock]

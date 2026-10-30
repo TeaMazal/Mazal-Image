@@ -1,0 +1,50 @@
+{
+  "browser": "msedge",
+  "checks": [
+    {
+      "name": "独立页登录并建立 Service Worker 缓存",
+      "milliseconds": 2560
+    },
+    {
+      "name": "缓存预热后的嵌入首次连接",
+      "milliseconds": 1766
+    },
+    {
+      "name": "主站整页连续刷新 5 次",
+      "milliseconds": 6982
+    },
+    {
+      "name": "仅刷新绘图子页面连续 3 次",
+      "milliseconds": 3133
+    },
+    {
+      "name": "手动重新连接 2 次",
+      "milliseconds": 1910
+    },
+    {
+      "name": "子页面迟到加载时有界重连恢复",
+      "milliseconds": 5990
+    },
+    {
+      "name": "生成中刷新恢复且不重复提交",
+      "milliseconds": 8731
+    },
+    {
+      "name": "嵌入不持久化密钥且 URL 不含票据",
+      "milliseconds": 3
+    },
+    {
+      "name": "独立页作品保留及余额显示",
+      "milliseconds": 2531
+    },
+    {
+      "name": "手机宽度首次进入和刷新",
+      "milliseconds": 1416
+    }
+  ],
+  "pageErrors": [],
+  "passed": true,
+  "mockGenerations": 1,
+  "browserSubmissions": 1,
+  "browserVersion": "156.0.4314.50"
+}

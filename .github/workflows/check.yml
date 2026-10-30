@@ -1,0 +1,45 @@
+name: Check sources
+on: [push, pull_request]
+permissions: {contents: read}
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run: {working-directory: frontend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "24", cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: node ../tests/test_embedded_workbench.mjs
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "24", cache: npm, cache-dependency-path: tests/browser/package-lock.json}
+      - run: python3 tests/test_site_config.py
+      - run: python3 tests/test_init_site.py
+      - run: docker build -t mazal-image-test -f deploy/Dockerfile.backend .
+      - run: docker run --rm --network none -e PYTHONPATH=/app -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_gateway_integration.py
+      - run: docker run --rm --network none -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_maintenance.py /suite/backend/maintenance.py
+      - name: Start isolated browser fixture
+        run: |
+          sudo python3 scripts/init_site.py --public-origin http://127.0.0.1:8341 --main-origin http://127.0.0.1:8340 --gateway-url http://mock:8080 --name 'Browser test' --project mazal-image-check --port 8341
+          docker tag mazal-image-test mazal-image-check-backend
+          docker compose -f compose.yml -f deploy/compose.test.yml build web
+          docker compose -f compose.yml -f deploy/compose.test.yml up -d --no-build --wait --wait-timeout 120
+      - run: npm ci --prefix tests/browser
+      - run: npx --prefix tests/browser playwright install --with-deps chromium firefox
+      - run: npm test --prefix tests/browser
+      - run: npm test --prefix tests/browser
+        env: {MI_TEST_BROWSER: firefox}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: browser-checks, path: artifacts/browser}
+      - run: python3 scripts/source_archive.py --output /tmp/mazal-image-source.tar.gz
+      - name: Stop isolated fixture
+        if: always()
+        run: docker compose -f compose.yml -f deploy/compose.test.yml down --remove-orphans

@@ -1,0 +1,16 @@
+FROM node:24-alpine AS build
+WORKDIR /src
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY frontend/ ./
+RUN npm run build
+
+FROM nginx:1.28-alpine
+COPY --from=build /src/dist /usr/share/nginx/html
+COPY LICENSE NOTICE.md /usr/share/nginx/html/licenses/project/
+COPY licenses/ /usr/share/nginx/html/licenses/dependencies/
+COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY deploy/security-headers.conf /etc/nginx/snippets/security-headers.conf.template
+COPY deploy/20-site-headers.sh /docker-entrypoint.d/20-site-headers.sh
+RUN chmod 755 /docker-entrypoint.d/20-site-headers.sh
+EXPOSE 8080

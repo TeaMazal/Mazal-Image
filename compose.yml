@@ -1,0 +1,95 @@
+services:
+  backend:
+    image: ${COMPOSE_PROJECT_NAME:-mazal-image}-backend:latest
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    read_only: true
+    environment:
+      MI_SITE_NAME: ${MI_SITE_NAME:-Mazal Image}
+      MI_PUBLIC_ORIGIN: ${MI_PUBLIC_ORIGIN:?Set MI_PUBLIC_ORIGIN}
+      MI_MAIN_ORIGIN: ${MI_MAIN_ORIGIN:?Set MI_MAIN_ORIGIN}
+      MI_GATEWAY_URL: ${MI_GATEWAY_URL:?Set MI_GATEWAY_URL}
+      MI_DATA_DIR: /state/data
+      MI_CONFIG_FILE: /state/config.json
+      STORAGE_BACKEND: sqlite
+      CHATGPT2API_BASE_URL: ${MI_PUBLIC_ORIGIN}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      HOME: /tmp
+    volumes:
+      - ./state:/state
+    tmpfs:
+      - /tmp:size=134217728,mode=1777
+    networks: [internal, egress]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1.5
+    mem_limit: 1536m
+    pids_limit: 128
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/version', timeout=4).read()"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: &logging
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      backend: {condition: service_healthy}
+    environment:
+      MI_MAIN_ORIGIN: ${MI_MAIN_ORIGIN}
+      MI_TRUSTED_PROXY_CIDR: ${MI_TRUSTED_PROXY_CIDR:-172.16.0.0/12}
+      NGINX_ENVSUBST_FILTER: ^MI_
+    ports:
+      - ${MI_BIND_ADDRESS:-127.0.0.1}:${MI_PORT:-8310}:8080
+    networks: [internal, egress]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/healthz]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+  maintenance:
+    image: ${COMPOSE_PROJECT_NAME:-mazal-image}-backend:latest
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    read_only: true
+    command: [/app/.venv/bin/python, /app/maintenance.py, --loop]
+    environment:
+      MI_STATE_DIR: /state
+      MI_BACKUP_DIR: /backups
+      MI_MEDIA_LIMIT_MB: ${MI_MEDIA_LIMIT_MB:-1024}
+      MI_MEDIA_MAX_AGE_HOURS: ${MI_MEDIA_MAX_AGE_HOURS:-72}
+      MI_MIN_FREE_MB: ${MI_MIN_FREE_MB:-512}
+      MI_BACKUP_KEEP: ${MI_BACKUP_KEEP:-3}
+      MI_BACKUP_LIMIT_MB: ${MI_BACKUP_LIMIT_MB:-32}
+      PYTHONDONTWRITEBYTECODE: "1"
+    volumes:
+      - ./state:/state
+      - ./backups:/backups
+    tmpfs:
+      - /tmp:size=67108864,mode=1777
+    network_mode: none
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    logging: *logging
+networks:
+  internal: {internal: true}
+  egress: {}

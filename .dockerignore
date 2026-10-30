@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+state
+backups
+artifacts
+**/node_modules
+**/dist
+**/out
+**/.next
+**/target
+**/__pycache__
+**/*.pyc
+**/*.log
+**/*.tsbuildinfo
+frontend/src-tauri
+frontend/UPSTREAM.md

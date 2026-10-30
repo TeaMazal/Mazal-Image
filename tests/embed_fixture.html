@@ -1,0 +1,21 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Mazal Image 隔离嵌入验收</title>
+<style>body{margin:0;font:14px system-ui}header{padding:12px;background:#eef5ff}#workspace{height:calc(100vh - 52px)}</style>
+<header>模拟主站 · <span id="status">连接中</span> <button id="retry">重新连接</button></header><div id="workspace"></div>
+<script type="module">
+import {createWorkbench} from '/embedded-workbench.js?v=0.1.0'
+const drawing = new URLSearchParams(location.search).get('drawing') || 'http://127.0.0.1:8341'
+let mounted
+function connect(){
+  mounted?.destroy()
+  document.querySelector('#status').textContent='连接中'
+  mounted=createWorkbench({container:document.querySelector('#workspace'),origin:drawing,keyId:1,
+    requestTicket:async(payload)=>{
+      const response=await fetch('/api/v1/image-workbench/ticket',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer mock-main-session'},body:JSON.stringify(payload)})
+      if(!response.ok)throw new Error('Ticket rejected')
+      return response.json()
+    },onState:(state)=>{if(typeof state.connected==='boolean')document.querySelector('#status').textContent=state.connected?'已连接':'连接中'},
+    onError:()=>document.querySelector('#status').textContent='连接失败'})
+}
+document.querySelector('#retry').onclick=connect
+connect()
+</script></html>
