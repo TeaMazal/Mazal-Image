@@ -347,7 +347,8 @@ def run_task(self, key, mode, payload, identity, model):
         detail = error.detail if isinstance(error, HTTPException) else str(error)
         message = error_message(detail, str(detail)[:400])
         self._update_task(key, status='error', error=message, data=[],
-                          duration_ms=int((time.time()-started)*1000))
+                          duration_ms=int((time.time()-started)*1000),
+                          http_status=error.status_code if isinstance(error, HTTPException) else 502)
         self._log_call(identity, mode, model, started, '调用失败', status='failed', error=message)
     finally:
         # The raw key exists only in the executing request/thread, never in task JSON.
@@ -565,6 +566,10 @@ engine_app.router.routes[:] = [route for route in engine_app.router.routes
                               if getattr(route, 'path', None) != '/{full_path:path}']
 
 
+from prompt_library import install_template_routes
+install_template_routes(engine_app, require_identity, gateway_request)
+
+
 @engine_app.api_route('/{full_path:path}', methods=['GET', 'HEAD'], include_in_schema=False)
 async def serve_admin_asset(full_path: str):
     if any(part in ('.', '..') for part in full_path.split('/')):
@@ -572,7 +577,7 @@ async def serve_admin_asset(full_path: str):
     if full_path == 'favicon.ico':
         return RedirectResponse('/pwa-icon.svg', status_code=302)
     allowed = re.fullmatch(
-        r'(?:image|accounts|settings|logs|debug|image-manager|login)'
+        r'(?:image|accounts|settings|logs|debug|image-manager|templates|login)'
         r'(?:/?|/index\.(?:html|txt)|/__next\.[A-Za-z0-9_.-]+(?:/__PAGE__)?\.txt)'
         r'|_next/static/[^\\\x00]+'
         r'|(?:openai|github)\.svg', full_path)
@@ -585,3 +590,8 @@ async def serve_admin_asset(full_path: str):
 
 
 app = CustomerGateway(engine_app)
+
+# Shared image protocols always submit through the billed customer gateway.
+import sys as _sys
+from image_protocols import install as _install_image_protocols
+app = _install_image_protocols(app, _sys.modules[__name__])

@@ -6,9 +6,15 @@
 
 本地维护入口：`E:\中转服务器\Mazal-Image`。Mazal 使用 `20261031-r2`；Souhub 已恢复覆盖前的轮次工具与操作图标版本，恢复记录为 `operations/souhub-recovery-current.json`，当前源码为 `/opt/mazal-image/frontend`。本地已合回这两项遗漏更新，尚未重新部署共享版。`/opt/chatgpt2api/current-source` 是首次同步时的历史快照，不再表示最新共享源码。完整记录见 `SHARED_RELEASE_ACCEPTANCE_20261031.md`。
 
+Souhub 于 2026-10-31 07:17 UTC 增量上线图片协议扩展，增加 `backend/image_protocols.py`、网关安装段、任务元数据恢复和 Nginx v1beta 路由。后续发布须合并这部分源码；不得用扩展前的网关、任务服务、Dockerfile 或 Nginx 模板覆盖。操作指针为 `operations/image-protocols-current.json`，详见 [图片协议发布记录](IMAGE_PROTOCOLS_RELEASE_20261031.md)。本次未同步新加坡 Mazal。
+
+07:29 UTC 已在最新模板版镜像上补充接口审查修复，恢复运行镜像中遗漏的任务元数据加载，并修正 Gemini 参数解析、Responses 工具选择和超时任务标识。最新补丁记录为 `operations/image-protocols-review-current.json`，见 [审查记录](IMAGE_PROTOCOLS_REVIEW_20261031.md)。发布时须同时核对源码与运行镜像，确保 `services/image_task_service.py` 保留 `api_protocol`、`api_fingerprint`、`http_status` 的加载逻辑。
+
 ## 发布
 
-1. 在 frontend/ 执行 npm ci、npm run build、npm test。后端有改动时，另外运行 tests/test_gateway_integration.py、test_site_config.py、test_maintenance.py；主站计费集成有改动时在主站项目单独运行对应 Go 测试。
+2026-10-31 后续模板中心、输入区及 API 帮助也已合回本仓库，见 [最新源码同步](SOURCE_SYNC_20261031.md)。Souhub 当前 web 为 `sha256:b8743095b80415c616edda5b9a1df2dc4b6b695aef0cc12f94573f8447252111`，backend 为 `sha256:962afa5ea6a6dec4cce07fa83a4f44b1ebf3c7160bfa82b434c40a5fda770c0c`。这里只推送源码，尚未将本次合成版部署到任一站；Mazal 的历史共享版不是 Souhub 的最新基准。
+
+1. 在 frontend/ 执行 npm ci、npm run build、npm test。后端有改动时，另外运行 tests/test_gateway_integration.py、test_image_protocols.py、test_prompt_library.py、test_site_config.py、test_maintenance.py 和 test_release.py，并构建管理前端；主站计费集成有改动时在主站项目单独运行对应 Go 测试。
 2. 在项目根目录执行 `python scripts/release.py --release 20261031-r1 --output ../releases/20261031-r1`。该命令使用同一份构建产物生成两站配置及源码包，并生成 SHA256 校验文件。后续版本必须使用新版本名。
 3. 将 tar.gz 和 scripts/deploy_site.py 上传到目标服务器；SSH 连接参数使用本机私有配置，不写入项目。先执行 `sudo python3 deploy_site.py --site mazal --archive /path/release.tar.gz --sha256 校验值`，Souhub 使用 `--site souhub`。默认只检查目标站、发布包和文件哈希。
 4. 发布前再次核对两站线上源码、现有功能及最新操作记录，将并行开发合回共享源码。检查通过后追加 `--apply` 上线；Compose 站还须用 `--expected-web-image 完整镜像ID` 指定核对过的当前 web 镜像。服务器多出发布包未包含的前端源文件、或镜像发生变化时，脚本拒绝上线。此检查不能代替现有文件内的功能差异审查。默认仅更新用户前端；后端功能更新时同时追加 `--backend`，先确认没有生成中的任务。Python 依赖文件发生变化时脚本会停止，需要单独评估依赖迁移。

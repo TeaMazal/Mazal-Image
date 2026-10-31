@@ -27,6 +27,8 @@ jobs:
       - run: python3 tests/test_init_site.py
       - run: docker build -t mazal-image-test -f deploy/Dockerfile.backend .
       - run: docker run --rm --network none -e PYTHONPATH=/app -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_gateway_integration.py
+      - run: docker run --rm --network none -e PYTHONPATH=/app -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_image_protocols.py
+      - run: docker run --rm --network none -e PYTHONPATH=/app -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_prompt_library.py
       - run: docker run --rm --network none -v "$PWD:/suite:ro" --entrypoint /app/.venv/bin/python mazal-image-test /suite/tests/test_maintenance.py /suite/backend/maintenance.py
       - name: Start isolated browser fixture
         run: |

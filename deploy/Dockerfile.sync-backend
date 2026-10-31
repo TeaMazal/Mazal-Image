@@ -12,5 +12,6 @@ FROM mazal-image:before-studio-sync-20261030t155408z
 COPY backend/engine/services /app/services
 COPY backend/engine/api /app/api
 COPY backend/engine/utils /app/utils
-COPY backend/gateway_integration.py backend/site_config.py /app/
+COPY backend/gateway_integration.py backend/site_config.py backend/maintenance.py backend/image_protocols.py backend/prompt_library.py /app/
+COPY backend/template_data /app/template_data
 COPY --from=admin-build /src/web/out /app/web_dist

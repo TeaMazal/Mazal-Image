@@ -51,7 +51,7 @@ def package(release, output, dist):
     source.mkdir()
     for name in ['frontend', 'backend', 'deploy', 'docs', 'scripts', 'tests', 'sites', 'integrations', 'licenses']:
         if (ROOT / name).is_dir():
-            shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns('node_modules', 'dist', '.git', '__pycache__', '.env', 'state', 'backups', '*.log', '*.tsbuildinfo'))
+            shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns('node_modules', 'dist', 'out', '.next', '.git', '__pycache__', '.env', 'state', 'backups', '*.log', '*.tsbuildinfo'))
     for name in ['AGENTS.md', 'README.md', 'LICENSE', 'NOTICE.md', 'VERSION', 'compose.yml', '.dockerignore', '.env.example']:
         if (ROOT / name).is_file(): shutil.copy2(ROOT / name, source / name)
     for name in ['mazal', 'souhub']:

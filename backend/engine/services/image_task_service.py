@@ -401,6 +401,16 @@ class ImageTaskService:
             error = _clean(item.get("error"))
             if error:
                 task["error"] = error
+            # Preserve only non-secret metadata needed to replay public API
+            # tasks after a restart, without resubmitting a billed generation.
+            protocol = item.get("api_protocol")
+            fingerprint = item.get("api_fingerprint")
+            if protocol in ("chat", "responses", "gemini", "task") and isinstance(fingerprint, str) and len(fingerprint) == 64 and all(c in "0123456789abcdef" for c in fingerprint):
+                task["api_protocol"] = protocol
+                task["api_fingerprint"] = fingerprint
+            http_status = item.get("http_status")
+            if type(http_status) is int and 400 <= http_status <= 599:
+                task["http_status"] = http_status
             tasks[_task_key(owner, task_id)] = task
         return tasks
 

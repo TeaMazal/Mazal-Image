@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import './studio.css'
+import './templateLibrary.css'
 import { initStore, useStore } from './store'
 import { createMazalSettings } from './lib/mazalConfig'
 import { normalizeParamsForSettings } from './lib/paramCompatibility'
@@ -27,6 +28,7 @@ import SketchBoardModal from './components/SketchBoardModal'
 import ImageContextMenu from './components/ImageContextMenu'
 import { FavoriteCollectionPickerModal, FavoriteCollectionsView, ManageCollectionsModal } from './components/FavoriteCollections'
 
+const TemplateGallery = lazy(() => import('./components/TemplateGallery'))
 let initialization: Promise<void> | null = null
 
 export default function App() {
@@ -78,14 +80,14 @@ export default function App() {
       <MazalHeader />
       {view === 'create' && <StudioSidebar open={sidebarOpen} close={() => setSidebarOpen(false)} />}
       <main data-home-main data-drag-select-surface className="studio-main">
-        {view === 'create' ? <StudioThread openSidebar={() => setSidebarOpen(true)} /> : <section className="studio-gallery">
+        {view === 'templates' ? <Suspense fallback={<p className="studio-template-status">正在打开灵感模板…</p>}><TemplateGallery /></Suspense> : view === 'create' ? <StudioThread openSidebar={() => setSidebarOpen(true)} /> : <section className="studio-gallery">
           <div className="studio-gallery-intro"><div><p className="studio-eyebrow">{view === 'favorites' ? '留住值得反复看的画面' : `${imageCount} 张图片，每一张都有来处`}</p><h1>{view === 'favorites' ? '你的收藏夹' : '作品画廊'}</h1><p>{view === 'favorites' ? '按主题整理灵感，随时回到原对话继续创作。' : '浏览所有对话的作品，找到灵感，再继续下一轮。'}</p></div><button className="studio-gallery-create" onClick={() => createConversation()}>＋ 新建对话</button></div>
           <SearchBar studio />
           {filterFavorite && !activeFavoriteCollectionId ? <FavoriteCollectionsView /> : <TaskGrid onlyOutputs />}
         </section>}
       </main>
     </div>
-    <InputBar key={`input-${privacyModeEpoch}-${activeId}`} />
+    {view !== 'templates' && <InputBar key={`input-${privacyModeEpoch}-${activeId}`} />}
     <DetailModal key={`detail-${privacyModeEpoch}`} />
     <Lightbox key={`lightbox-${privacyModeEpoch}`} />
     <MazalSettings />

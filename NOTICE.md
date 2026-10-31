@@ -20,6 +20,8 @@ Mazal Image 是衍生整合项目，新增整合代码的授权见根 LICENSE；
 
 ## 依赖
 
+灵感模板的提示词和示例封面独立采用 CC BY 4.0，原始作者、案例链接及修改说明见 `backend/template_data/library.json`、`backend/template_data/attribution/` 和该目录的 README；许可全文见 `backend/template_data/LICENSE-CC-BY-4.0.txt`。根目录的软件许可不替代这部分素材的署名要求。
+
 前端与管理页面依赖分别由各自 package-lock.json 固定；引擎 Python 依赖由 uv.lock 固定。依赖属于各自作者，须遵守各自许可证。许可收集脚本为 `scripts/collect_npm_licenses.mjs` 与 `scripts/collect_python_licenses.py`，发布材料在 licenses/ 内保留对应构建的报告和许可原文。
 
 `licenses/frontend-npm/` 与 `licenses/admin-npm/` 记录锁定构建中安装的非 dev npm 包，`licenses/python/` 记录运行镜像的 Python 包；这些不是操作系统或所有开发工具的完整 SBOM。缺失的上游许可原文及补充来源见 `licenses/admin-npm/supplemental-sources.json`。

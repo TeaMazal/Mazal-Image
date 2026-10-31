@@ -91,6 +91,8 @@ function AtImageOptionThumb({ option }: { option: AtImageOption }) {
 
 export default function InputBar() {
   const prompt = useStore((s) => s.prompt)
+  const activeStudioConversationId = useStore((s) => s.activeStudioConversationId)
+  const studioView = useStore((s) => s.studioView)
   const appMode = useStore((s) => s.appMode)
   const setPrompt = useStore((s) => s.setPrompt)
   const inputImages = useStore((s) => s.inputImages)
@@ -337,12 +339,10 @@ export default function InputBar() {
   const textareaRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const imagesRef = useRef<HTMLDivElement>(null)
-  const prevHeightRef = useRef(42)
 
   const [isDragging, setIsDragging] = useState(false)
   const [isSingleLine, setIsSingleLine] = useState(true)
   const [promptExpanded, setPromptExpanded] = useState(false)
-  const [promptFocused, setPromptFocused] = useState(false)
   const [promptExpandedTop, setPromptExpandedTop] = useState(0)
   const [promptCanExpand, setPromptCanExpand] = useState(false)
   const [clearPromptHover, setClearPromptHover] = useState(false)
@@ -1071,47 +1071,33 @@ export default function InputBar() {
     const el = textareaRef.current
     if (!el) return
 
-    // 计算图片区域等固定高度
     const imagesHeight = imagesRef.current?.offsetHeight ?? 0
-    const fixedOverhead = imagesHeight + 140
-
-    // 展开时填满卡片的剩余空间，普通状态最多占页面的 40%。
-    const normalMaxH = Math.max(window.innerHeight * 0.4 - fixedOverhead, 80)
+    const style = window.getComputedStyle(el)
+    const lineHeight = parseFloat(style.lineHeight) || 24
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom)
+    const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth)
+    const minH = parseFloat(style.minHeight) || 42
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight
+    // 给对话和手机键盘留出空间，长提示词仍可手动展开。
+    const normalMaxH = Math.max(minH, Math.min(lineHeight * (isMobile ? 5 : 8) + padding + border, viewportHeight * 0.55 - imagesHeight - 120))
     const maxH = promptExpanded
-      ? Math.max(el.parentElement?.clientHeight ?? 0, 80)
-      : promptFocused ? normalMaxH : 42
+      ? Math.max(el.parentElement?.clientHeight ?? 0, minH)
+      : normalMaxH
 
-    // 1. 清零高度以获取真实文本高度
-    el.style.transition = 'none'
     el.style.height = '0'
     el.style.overflowY = 'hidden'
-    const scrollH = el.scrollHeight
-
     const placeholderEl = el.parentElement?.querySelector('.prompt-placeholder')
-    const placeholderH = placeholderEl ? placeholderEl.scrollHeight : 0
-    const minH = Math.max(42, placeholderH)
+    const desired = Math.max(el.scrollHeight + border, placeholderEl ? placeholderEl.scrollHeight + border : 0, minH)
+    const targetH = Math.min(desired, maxH)
 
-    const desired = Math.max(scrollH, minH)
-    const targetH = desired > maxH ? maxH : desired
-
-    // 判断是否为单行
-    setIsSingleLine(desired <= minH)
+    setIsSingleLine(desired <= minH + 1)
     setPromptCanExpand(desired > normalMaxH)
-
-    // 2. 回设旧高度并重绘以准备触发动画
-    el.style.height = prevHeightRef.current + 'px'
-    void el.offsetHeight
-
-    // 3. 恢复平滑过渡并设置新目标高度
-    el.style.transition = 'height 150ms ease, border-color 200ms, box-shadow 200ms'
     el.style.height = targetH + 'px'
-    el.style.overflowY = desired > maxH ? 'auto' : 'hidden'
-
-    prevHeightRef.current = targetH
-  }, [promptExpanded, promptFocused])
+    el.style.overflowY = desired > maxH + 1 ? 'auto' : 'hidden'
+  }, [promptExpanded, isMobile])
 
   // 同步 prompt 至 contentEditable
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = textareaRef.current
     if (!el) return
     // 输入时不重复渲染以防光标跳动
@@ -1129,11 +1115,12 @@ export default function InputBar() {
       : ''
     if (el.innerHTML !== html) {
       el.innerHTML = html
+      el.scrollTop = 0
     }
   }, [prompt, inputImages])
 
   // 补 <br> 哨兵避免 pre-wrap 吃掉行尾 \n，同时不影响纯文本读取。
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = textareaRef.current
     if (!el) return
     const last = el.lastChild
@@ -1148,9 +1135,13 @@ export default function InputBar() {
     }
   }, [prompt, inputImages])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (textareaRef.current) textareaRef.current.scrollTop = 0
+  }, [activeStudioConversationId])
+
+  useLayoutEffect(() => {
     adjustTextareaHeight()
-  }, [prompt, inputImages, adjustTextareaHeight, isMobile, mobileCollapsed, promptExpanded])
+  }, [prompt, inputImages, adjustTextareaHeight, mobileCollapsed, activeStudioConversationId, studioView])
 
   // 监听 selectionchange 更新光标位置（onSelect 在 contentEditable 下不可靠）
   useEffect(() => {
@@ -1212,7 +1203,6 @@ export default function InputBar() {
       if (!target) return
 
       if (!target.closest('[data-input-bar]')) {
-        setPromptFocused(false)
         setMobileCollapsed(true)
       }
 
@@ -1237,8 +1227,21 @@ export default function InputBar() {
   }, [inputImages.length, Boolean(maskDraft), maskPreviewUrl, adjustTextareaHeight])
 
   useEffect(() => {
+    const parent = textareaRef.current?.parentElement
+    let width = parent?.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (parent?.clientWidth === width) return
+      width = parent?.clientWidth
+      adjustTextareaHeight()
+    })
+    if (parent) observer.observe(parent)
     window.addEventListener('resize', adjustTextareaHeight)
-    return () => window.removeEventListener('resize', adjustTextareaHeight)
+    window.visualViewport?.addEventListener('resize', adjustTextareaHeight)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', adjustTextareaHeight)
+      window.visualViewport?.removeEventListener('resize', adjustTextareaHeight)
+    }
   }, [adjustTextareaHeight])
 
   // 移动端拖动条手势
@@ -1580,26 +1583,28 @@ export default function InputBar() {
           setAttachHover(false)
           setShowUploadMenu(!showUploadMenu)
         }}
-        className={`p-2.5 rounded-xl transition-all shadow-sm ${
+        className={`studio-attach-button p-2.5 rounded-xl transition-all ${
           atImageLimit
             ? 'bg-gray-200 dark:bg-white/[0.04] text-gray-300 dark:text-gray-500 cursor-not-allowed'
-            : 'bg-gray-200 dark:bg-white/[0.06] hover:bg-gray-300 dark:hover:bg-white/[0.1] text-gray-500 dark:text-gray-300 hover:shadow'
+            : 'bg-black/[0.025] dark:bg-white/[0.04] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] text-gray-500 dark:text-gray-300'
         }`}
         aria-label={uploadImageTooltipText}
         aria-expanded={showUploadMenu}
       >
         <svg
-          className={`w-5 h-5 transition-transform duration-200 ${showUploadMenu ? 'rotate-45' : ''}`}
+          className="w-5 h-5"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <rect x="3" y="3" width="18" height="18" rx="4" strokeWidth={1.5} />
+          <circle cx="8" cy="8" r="1.5" strokeWidth={1.5} />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m3 16 5-5 5 5 3-3 5 5" />
         </svg>
       </button>
 
       {showUploadMenu && (
-        <div className={`absolute bottom-full ${mobile ? 'left-0' : 'right-0'} mb-2 w-32 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200`}>
+        <div className="absolute bottom-full left-0 mb-2 w-32 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {mobile && (
             <button
               className="w-full px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-center gap-2 transition-colors"
@@ -1650,6 +1655,13 @@ export default function InputBar() {
         </div>
       )}
     </div>
+  )
+
+  const renderTemplateButton = () => activeProfile.provider === MAZAL_PROVIDER && (
+    <button type="button" className="studio-composer-template" onClick={() => useStore.getState().setStudioView('templates')}>
+      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+      <span>灵感模板</span>
+    </button>
   )
 
   const renderClearAllButton = () => (
@@ -1744,6 +1756,7 @@ export default function InputBar() {
       batchProgress={batchProgress}
       onBatchChange={setSettings}
       onStopBatch={stopBatchPrompts}
+      onClearPrompt={isMobile && prompt.length > 0 ? handleClearPrompt : undefined}
     />
   )
 
@@ -1796,10 +1809,10 @@ export default function InputBar() {
           {/* 移动端拖动条 */}
           <div
             ref={handleRef}
-            className={promptExpanded ? 'hidden' : 'sm:hidden flex justify-center pt-0.5 pb-2 -mt-1 cursor-pointer touch-none'}
+            className={promptExpanded || (activeProfile.provider === MAZAL_PROVIDER && !inputImages.length) ? 'hidden' : 'sm:hidden flex justify-center pt-0.5 pb-2 -mt-1 cursor-pointer touch-none'}
             role="button"
             tabIndex={0}
-            aria-label={mobileCollapsed ? '展开创作参数' : '收起创作参数'}
+            aria-label={activeProfile.provider === MAZAL_PROVIDER ? mobileCollapsed ? '展开参考图' : '收起参考图' : mobileCollapsed ? '展开创作参数' : '收起创作参数'}
             aria-expanded={!mobileCollapsed}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
@@ -1871,7 +1884,7 @@ export default function InputBar() {
               ref={textareaRef}
               contentEditable
               suppressContentEditableWarning
-              onFocus={() => { setPromptFocused(true); setMobileCollapsed(false) }}
+              onFocus={() => setMobileCollapsed(false)}
               onInput={(e) => {
                 isUserInputRef.current = true
                 const el = e.currentTarget
@@ -1930,9 +1943,9 @@ export default function InputBar() {
                 {promptPlaceholder}
               </div>
             )}
-            {prompt.length > 0 && (
+            {prompt.length > 0 && (!isMobile || activeProfile.provider !== MAZAL_PROVIDER) && (
               <div
-                className={`absolute z-10 ${
+                className={`studio-composer-clear absolute z-10 ${
                   isSingleLine ? 'right-3 top-1/2 -translate-y-1/2' : 'right-3 top-3'
                 }`}
                 onMouseEnter={() => setClearPromptHover(true)}
@@ -1979,12 +1992,12 @@ export default function InputBar() {
           {/* 参数 + 按钮 */}
           <div className="mt-3">
             {/* 桌面端布局 */}
-            <div className="hidden sm:flex items-center justify-between gap-3">
-              {renderParams()}
+            <div className="studio-composer-toolbar hidden sm:flex items-center gap-3">
+              <div className="studio-composer-tools flex items-center gap-2 flex-shrink-0">{renderAddImageButton(false)}{renderTemplateButton()}</div>
+              <div className="studio-composer-params min-w-0 flex-1">{renderParams()}</div>
 
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="studio-composer-submit flex items-center gap-3 flex-shrink-0">
                 {!isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
-                {renderAddImageButton(false)}
                 <div
                   className="relative"
                   onMouseEnter={() => setSubmitHover(true)}
@@ -2020,22 +2033,23 @@ export default function InputBar() {
 
             {/* 移动端布局 */}
             <div className="sm:hidden flex flex-col gap-2">
-              <div className={`collapse-section${mobileCollapsed ? ' collapsed' : ''}`}>
+              <div className={`collapse-section${mobileCollapsed && activeProfile.provider !== MAZAL_PROVIDER ? ' collapsed' : ''}`}>
                 <div className="collapse-inner">
                   {renderParams()}
                   <div className="h-2" />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
+              <div className="studio-composer-mobile-actions flex items-end gap-2">
                 {renderAddImageButton(true)}
+                {renderTemplateButton()}
                 <div
-                  className="relative flex-1"
+                  className="relative min-w-0 flex-1"
                   onMouseEnter={() => setSubmitHover(true)}
                   onMouseLeave={() => setSubmitHover(false)}
                 >
                   <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig || batchRunning) && submitHover} text={submitTooltipText} />
+                  {isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                   <button
                     onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
                     disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}

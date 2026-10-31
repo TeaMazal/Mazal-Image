@@ -2,14 +2,17 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { getMazalSession } from '../lib/mazalSession'
 import { guideStorageKey, siteConfig } from '../lib/siteConfig'
+import StudioApiGuide from './StudioApiGuide'
 import '../studio.css'
 
-type HelpTopic = 'start' | 'billing' | 'edit' | 'failures'
-const topics: Array<[HelpTopic, string]> = [['start', '开始创作'], ['billing', '额度与价格'], ['edit', '参考图改图'], ['failures', '遇到问题']]
+type HelpTopic = 'start' | 'billing' | 'edit' | 'failures' | 'api'
+const topics: Array<[HelpTopic, string]> = [['start', '开始创作'], ['billing', '额度与价格'], ['edit', '参考图改图'], ['failures', '遇到问题'], ['api', 'API 接入']]
 
 function StudioHelpDialog({ initialTopic, close }: { initialTopic: HelpTopic; close: () => void }) {
   const [topic, setTopic] = useState(initialTopic)
   const dialog = useRef<HTMLDialogElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  useEffect(() => { content.current?.scrollTo(0, 0) }, [topic])
   useEffect(() => {
     const element = dialog.current!
     element.showModal()
@@ -19,7 +22,8 @@ function StudioHelpDialog({ initialTopic, close }: { initialTopic: HelpTopic; cl
     <div className="studio-help-panel">
       <header><div><p>{siteConfig.name} · 使用指南</p><h2 id="studio-help-title">从第一个想法，到下一轮创作</h2></div><button autoFocus aria-label="关闭使用帮助" onClick={close}>×</button></header>
       <nav aria-label="帮助主题">{topics.map(([id, title]) => <button key={id} aria-current={topic === id ? 'page' : undefined} onClick={() => setTopic(id)}>{title}</button>)}</nav>
-      <div className="studio-help-content">
+      <div className="studio-help-content" ref={content}>
+        {topic === 'api' && <StudioApiGuide />}
         {topic === 'start' && <>
           <h3>一个主题，放进一个对话</h3><ol><li><strong>新建对话</strong><p>描述主体、场景、风格和需要保留的细节，选择尺寸与张数后生成。首次提交的提示词会成为对话名称，也可以手动重命名。</p></li><li><strong>边等待，边整理灵感</strong><p>生成时可以切换对话；完成通知中的“查看结果”会带你回到对应轮次。刷新页面后，使用同一密钥可继续查询任务。</p></li><li><strong>从结果接着创作</strong><p>“继续修改”会把选中的图片作为下一轮参考图；“再生成一轮”会使用原来的输入重新生成，并保留原作品。</p></li></ol>
           <div className="studio-help-note"><strong>作品保存在当前浏览器</strong><p>对话、草稿和作品按登录密钥隔离。换设备或清除浏览器数据后不会自动同步。重要作品请下载，或在“设置 → 数据”导出备份。</p></div>

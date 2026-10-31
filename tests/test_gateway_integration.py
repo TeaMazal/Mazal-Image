@@ -46,7 +46,15 @@ class Gateway(BaseHTTPRequestHandler):
         elif token == EMPTY and self.path != '/v1/usage':
             code, data = 403, {'message': 'insufficient balance'}
         elif self.path.startswith('/v1/images/'):
-            code, data = 200, {'data': [{'url': 'https://example.invalid/test.png'}],
+            if self.headers.get('Content-Type', '').startswith('application/json'):
+                image_format = json.loads(body).get('response_format')
+            else:
+                parsed = BytesParser(policy=default).parsebytes(
+                    ('Content-Type: ' + self.headers.get('Content-Type', '') + '\r\n\r\n').encode() + body)
+                image_format = next((p.get_payload(decode=True).decode() for p in parsed.iter_parts()
+                    if p.get_param('name', header='content-disposition') == 'response_format'), '')
+            image = {'b64_json': 'aW1hZ2U='} if image_format == 'b64_json' else {'url': 'https://example.invalid/test.png'}
+            code, data = 200, {'data': [image],
                                'usage': {'output_tokens': 1}}
         elif self.path == '/v1/usage':
             code, data = 200, {'mode': 'unrestricted', 'balance': 0 if token == EMPTY else 12.3456,
@@ -180,7 +188,7 @@ class GatewayIntegrationTests(unittest.TestCase):
 
     def test_unknown_pages_and_root_exports_never_serve_legacy_home(self):
         for path in ('/', '/index', '/missing-page', '/index.txt', '/__next._full.txt',
-                     '/404.html', '/accounts/missing', '/.env'):
+                     '/404.html', '/accounts/missing', '/templates/missing', '/.env'):
             for method in ('GET', 'HEAD'):
                 with self.subTest(path=path, method=method):
                     code, _ = asyncio.run(request(path, method=method))
@@ -193,11 +201,11 @@ class GatewayIntegrationTests(unittest.TestCase):
         with patch.object(integration.support, 'resolve_web_asset', return_value=None) as resolve:
             for path in ('accounts', 'accounts/', 'settings/index.html', 'logs/index.txt',
                          'debug/__next.debug.__PAGE__.txt', 'accounts/__next.accounts/__PAGE__.txt', 'image-manager/', 'login/',
-                         'image/index.txt', '_next/static/chunks/test.js', 'openai.svg', 'github.svg'):
+                         'image/index.txt', 'templates/', '_next/static/chunks/test.js', 'openai.svg', 'github.svg'):
                 with self.assertRaises(integration.HTTPException) as error:
                     asyncio.run(integration.serve_admin_asset(path))
                 self.assertEqual(error.exception.status_code, 404)
-            self.assertEqual(resolve.call_count, 12)
+            self.assertEqual(resolve.call_count, 13)
             resolve.reset_mock()
             for path in ('accounts/../../index.html', '_next/static/../../index.html', 'index.txt'):
                 with self.assertRaises(integration.HTTPException):
@@ -295,8 +303,10 @@ class GatewayIntegrationTests(unittest.TestCase):
         routes = [route for route in integration.app.engine.routes
             if getattr(route, 'path', '').startswith('/api/')
             and not route.path.startswith('/api/image-tasks')
+            and not route.path.startswith('/api/workbench/')
             and route.path != '/api/third-party-apps']
-        self.assertEqual(len(routes), 57)
+        self.assertGreaterEqual(len(routes), 60)
+        self.assertTrue({'/api/admin/template-library', '/api/admin/template-library/{template_id}', '/api/admin/template-library/cover'}.issubset({route.path for route in routes}))
         for route in routes:
             for token, expected in (('', 401), (CUSTOMER, 403)):
                 with self.subTest(path=route.path, methods=route.methods, expected=expected):
@@ -306,11 +316,30 @@ class GatewayIntegrationTests(unittest.TestCase):
                         args = {name: ('Bearer ' + token if token else None) if name == 'authorization' else object()
                             for name, param in inspect.signature(route.endpoint).parameters.items()
                             if name == 'authorization' or param.default is inspect.Parameter.empty}
+                        if 'request' in args:
+                            from starlette.requests import Request
+                            args['request'] = Request({'type': 'http', 'headers': [(b'authorization', ('Bearer ' + token).encode())] if token else []})
                         with self.assertRaises(integration.HTTPException) as error:
-                            asyncio.run(route.endpoint(**args))
+                            result = route.endpoint(**args)
+                            if inspect.isawaitable(result):
+                                asyncio.run(result)
                         self.assertEqual(error.exception.status_code, expected)
                     finally:
                         integration.CONTEXT.reset(marker)
+
+    def test_template_workbench_permissions_through_full_gateway(self):
+        code, result, headers = asyncio.run(request('/api/workbench/templates', CUSTOMER, return_headers=True))
+        self.assertEqual(code, 200)
+        self.assertEqual(len(result['templates']), 24)
+        self.assertEqual(headers[b'cache-control'], b'no-store')
+        self.assertEqual(asyncio.run(request('/api/workbench/templates'))[0], 401)
+        code, result = asyncio.run(request('/api/workbench/prompt-optimizer', CUSTOMER))
+        self.assertEqual(code, 200)
+        self.assertEqual(result['models'], [])
+        for path, method in [('/api/admin/template-library', 'GET'), ('/api/admin/template-library/new', 'PUT'), ('/api/admin/template-library/cover', 'POST')]:
+            for token, expected in [('', 401), (CUSTOMER, 403)]:
+                code, _ = asyncio.run(request(path, token, method, forbid_body=True))
+                self.assertEqual(code, expected)
 
     def test_health_statistics_are_admin_only(self):
         self.assertEqual(asyncio.run(request('/health'))[0], 401)

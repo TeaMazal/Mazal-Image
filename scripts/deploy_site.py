@@ -107,6 +107,24 @@ def build_image(op, dockerfile, tag, source):
     return subprocess.check_output(['docker', 'image', 'inspect', '-f', '{{.Id}}', tag], text=True).strip()
 
 
+def merge_web_routes(config):
+    # 保留线上代理配置，仅补齐共享功能所需的路由。
+    config = config.replace('(?:classic|image|workbench)', '(?:classic|workbench)')
+    pattern = r'(location ~ \^/\(\?:)([^)]+)(\)\(\?:/\|\$\) \{)'
+    def add_routes(match):
+        routes = match[2].split('|')
+        if not {'api', 'v1', 'accounts', '_next'}.issubset(routes):
+            return match[0]
+        return match[1] + '|'.join(dict.fromkeys(routes + ['v1beta', 'image', 'templates'])) + match[3]
+    config = re.sub(pattern, add_routes, config)
+    assert 'templates' in config and 'v1beta' in config, '未知 API 代理配置，停止覆盖'
+    if 'location ^~ /template-media/' not in config:
+        anchor = 'location ^~ /assets/'
+        assert anchor in config, '未知静态资源配置，停止覆盖'
+        config = config.replace(anchor, 'location ^~ /template-media/ { proxy_buffering on; proxy_pass http://backend:8080; }\n    ' + anchor, 1)
+    return config
+
+
 def deploy(args):
     archive = args.archive.resolve()
     assert re.fullmatch('[a-f0-9]{64}', args.sha256) and sha(archive) == args.sha256, '发布包 SHA256 不符'
@@ -163,7 +181,7 @@ def deploy(args):
                 original = 'location = /site-config.js { proxy_pass http://backend:8080; }'
                 replacement = 'location = /site-config.js { add_header Cache-Control no-store; include /etc/nginx/snippets/security-headers.conf; try_files $uri =404; }'
                 assert original in config or replacement in config, '未知前端配置，停止覆盖'
-                template.write_text(config.replace(original, replacement))
+                template.write_text(merge_web_routes(config.replace(original, replacement)) if args.backend else config.replace(original, replacement))
                 image = build_image(op, 'FROM ' + old['Image'] + '\nCOPY web/' + args.site + '/ /usr/share/nginx/html/\nCOPY web-template.conf /etc/nginx/templates/default.conf.template\n', tag, op / 'release')
                 before['images'][profile['webContainer']] = {'id': old['Image'], 'tag': old['Config']['Image'], 'inspect': old, 'service': 'web'}
                 builds[profile['webContainer']] = image
@@ -180,7 +198,8 @@ FROM BASE
 COPY backend/engine/api /app/api
 COPY backend/engine/services /app/services
 COPY backend/engine/utils /app/utils
-COPY backend/gateway_integration.py backend/site_config.py backend/maintenance.py /app/
+COPY backend/gateway_integration.py backend/site_config.py backend/maintenance.py backend/image_protocols.py backend/prompt_library.py /app/
+COPY backend/template_data /app/template_data
 COPY --from=admin /src/web/out /app/web_dist
 ENV MI_LOCAL_ENGINE_IMAGE_ONLY=POLICY
 '''.replace('BASE', old['Image']).replace('POLICY', '1' if profile['localEngineImageOnly'] else '0')

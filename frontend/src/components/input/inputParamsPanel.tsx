@@ -145,6 +145,7 @@ export default function InputParamsPanel({
   batchProgress,
   onBatchChange,
   onStopBatch,
+  onClearPrompt,
 }: {
   params: TaskParams
   setParams: (patch: Partial<TaskParams>) => void
@@ -195,8 +196,9 @@ export default function InputParamsPanel({
   batchProgress: BatchProgress | null
   onBatchChange: (patch: BatchSettingsPatch) => void
   onStopBatch: () => void
+  onClearPrompt?: () => void
 }) {
-  if (activeProfile.provider === MAZAL_PROVIDER) return <MazalParamsPanel params={params} setParams={setParams} displaySize={displaySize} onOpenSizePicker={onOpenSizePicker} batchEnabled={batchEnabled} batchProgress={batchProgress} batchPromptCount={batchPromptCount} onBatchChange={onBatchChange} onStopBatch={onStopBatch} showBatch={showBatch} />
+  if (activeProfile.provider === MAZAL_PROVIDER) return <MazalParamsPanel params={params} setParams={setParams} displaySize={displaySize} onOpenSizePicker={onOpenSizePicker} batchEnabled={batchEnabled} batchProgress={batchProgress} batchPromptCount={batchPromptCount} onBatchChange={onBatchChange} onStopBatch={onStopBatch} showBatch={showBatch} onClearPrompt={onClearPrompt} />
 
   // 折叠时也展示弹层内每一项的当前值，不支持的参数不显示
   const moreSummary = [

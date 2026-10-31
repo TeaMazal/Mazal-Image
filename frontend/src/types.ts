@@ -337,7 +337,7 @@ export interface TaskRecord {
   agentToolAction?: 'generate' | 'edit' | 'auto' | string
 }
 
-export type StudioView = 'create' | 'gallery' | 'favorites'
+export type StudioView = 'create' | 'gallery' | 'favorites' | 'templates'
 
 export interface StudioDraft extends AgentInputDraft {
   params: TaskParams

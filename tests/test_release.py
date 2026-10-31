@@ -19,6 +19,25 @@ deploy = load('deploy_site')
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_backend_upgrade_adds_template_and_protocol_routes_without_losing_site_settings(self):
+        config = (ROOT / 'deploy/nginx.conf.template').read_text(encoding='utf-8')
+        old = config.replace('api|v1|v1beta|', 'api|v1|').replace('files|image|', 'files|').replace('image-manager|templates|', 'image-manager|')
+        old = old.replace('    location ^~ /template-media/ { proxy_buffering on; proxy_pass http://backend:8080; }\n', '')
+        old = old.replace('(?:classic|workbench)', '(?:classic|image|workbench)')
+        custom = '\n    location = /site-health { return 200; }\n'
+        merged = deploy.merge_web_routes(old + custom)
+        for name in ['v1beta', 'templates', 'image']:
+            self.assertIn(name, merged)
+        self.assertIn('location ^~ /template-media/', merged)
+        self.assertIn('location = /embed ', merged)
+        self.assertIn(custom, merged)
+        self.assertNotIn('(?:classic|image|workbench)', merged)
+        self.assertEqual(deploy.merge_web_routes(merged), merged)
+
+    def test_unknown_proxy_layout_is_rejected(self):
+        with self.assertRaises(AssertionError):
+            deploy.merge_web_routes('server { location / { try_files $uri =404; } }')
+
     def test_release_cannot_omit_frontend_features_present_on_server(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

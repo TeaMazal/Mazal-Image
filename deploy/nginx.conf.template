@@ -26,8 +26,9 @@ server {
     location = /manifest.webmanifest { proxy_pass http://backend:8080; }
     location = /sw.js { add_header Cache-Control no-cache; include /etc/nginx/snippets/security-headers.conf; try_files $uri =404; }
     location ^~ /assets/ { try_files $uri =404; }
+    location ^~ /template-media/ { proxy_buffering on; proxy_pass http://backend:8080; }
     location ^~ /licenses/ { try_files $uri $uri/index.html =404; }
-    location ~ ^/(?:classic|image|workbench)(?:/|\.|$) { return 302 /; }
+    location ~ ^/(?:classic|workbench)(?:/|\.|$) { return 302 /; }
     location ^~ /engine/v1/ {
         proxy_set_header Host $host;
         proxy_set_header Authorization $http_authorization;
@@ -37,7 +38,7 @@ server {
         proxy_set_header X-Mazal-Engine-Only 1;
         proxy_pass http://backend:8080/v1/;
     }
-    location ~ ^/(?:api|v1|auth|images|image-thumbnails|files|accounts|settings|logs|debug|image-manager|login|_next)(?:/|$) {
+    location ~ ^/(?:api|v1|v1beta|auth|images|image-thumbnails|files|image|accounts|settings|logs|debug|image-manager|templates|login|_next)(?:/|$) {
         add_header Content-Security-Policy "frame-ancestors 'none'; object-src 'none'" always;
         add_header Cache-Control no-store always;
         proxy_pass http://backend:8080;

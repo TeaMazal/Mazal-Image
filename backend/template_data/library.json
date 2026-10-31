@@ -1,0 +1,928 @@
+{
+  "revision": 1,
+  "templates": [
+    {
+      "id": "inspiration-100",
+      "title": "实物 × 手绘涂鸦",
+      "description": "让真实商品遇上轻盈的手绘创意。",
+      "category": "电商商品",
+      "prompt": "创作主题：{{subject}}。\n商品周围加入与用途相关的手绘线条、箭头和小元素，摄影主体与涂鸦形成有层次的广告构图，保留充足留白。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。\n不编造商品卖点、参数、价格、认证或促销信息；除非我明确要求，否则不添加广告文字。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "商品 / 主体",
+          "default": "",
+          "placeholder": "例如：一瓶琥珀色香水",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/b0be1e7eaeb0625c7815592b2f32ef0cf82cfb9f53adf4e6f4b14fa93cf32ad8.webp",
+      "tags": [
+        "电商商品",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 0,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @azed_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/100",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-37",
+      "title": "柔和立体广告",
+      "description": "适合新品展示、社交媒体与轻生活品牌。",
+      "category": "电商商品",
+      "prompt": "创作主题：{{subject}}。\n柔和纯色背景，立体几何展台，细腻漫射光与自然接触阴影，商品为绝对视觉中心，清新克制的商业摄影。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。\n不编造商品卖点、参数、价格、认证或促销信息；除非我明确要求，否则不添加广告文字。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "商品 / 主体",
+          "default": "",
+          "placeholder": "例如：一瓶琥珀色香水",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/4973a593bc01476ac3e3673a5f7ad055f4148eedff0ce883b56e5ecfe7d6b51f.webp",
+      "tags": [
+        "电商商品",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 10,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @op7418",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/37",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-72",
+      "title": "珠宝质感大片",
+      "description": "用光线与细节表现首饰材质。",
+      "category": "电商商品",
+      "prompt": "创作主题：{{subject}}。\n近景珠宝摄影，深浅有序的背景，精准控制金属高光与宝石折射，清楚呈现真实工艺，奢雅但不夸张。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。\n不编造商品卖点、参数、价格、认证或促销信息；除非我明确要求，否则不添加广告文字。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "商品 / 主体",
+          "default": "",
+          "placeholder": "例如：一瓶琥珀色香水",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/b4cdf8f7c51a283d3332a8db92558319f34a424f755fb36d8a2ff41a04cc3ea6.webp",
+      "tags": [
+        "电商商品",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 20,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @azed_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/72",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-55",
+      "title": "生活场景陈列",
+      "description": "把商品放进有温度的日常环境。",
+      "category": "电商商品",
+      "prompt": "创作主题：{{subject}}。\n自然窗光，整洁有生活气息的室内陈列，以简约道具衬托商品，材质真实、空间比例合理，柔和而有呼吸感。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。\n不编造商品卖点、参数、价格、认证或促销信息；除非我明确要求，否则不添加广告文字。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "商品 / 主体",
+          "default": "",
+          "placeholder": "例如：一瓶琥珀色香水",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/71f543de8b0440f09935328927065e05b02ac971c258fe365df80b85a578f2bc.webp",
+      "tags": [
+        "电商商品",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 30,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @azed_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/55",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-98",
+      "title": "磨砂玻璃剪影",
+      "description": "用朦胧轮廓营造安静的情绪。",
+      "category": "人像写真",
+      "prompt": "创作主题：{{subject}}。\n人物置于半透明磨砂玻璃之后，用背光塑造柔和剪影与轮廓，保留姿态辨识度，细腻颗粒，含蓄的电影情绪。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/232cd481e8ec208b357f97349838603bfa5112d10f62daf15c9b525e43318f0c.webp",
+      "tags": [
+        "人像写真",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 40,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @umesh_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/98",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-86",
+      "title": "双重曝光肖像",
+      "description": "将人物与风景融合成一张故事画面。",
+      "category": "人像写真",
+      "prompt": "创作主题：{{subject}}。\n以人物侧脸轮廓为外形，将与主题相关的自然风景融入轮廓内部，明暗过渡自然，轮廓之外保留简洁留白，艺术双重曝光。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/d84ef055bf6b2bc085b1855c3ecb9b33c86023d5892e3d9d5181f88ad28de5d0.webp",
+      "tags": [
+        "人像写真",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 50,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 rezzycheck (Sora)",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/86",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-69",
+      "title": "剪影艺术写真",
+      "description": "适合情绪海报与个人艺术肖像。",
+      "category": "人像写真",
+      "prompt": "创作主题：{{subject}}。\n明确的侧光或逆光，人物成为清晰优雅的剪影，以色彩层次与负空间表达情绪，构图完整，克制而有戏剧性。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/f64612f7039c07f422292faab7af2e110bfee278af4924ceac327975f0558149.webp",
+      "tags": [
+        "人像写真",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 60,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @umesh_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/69",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-97",
+      "title": "软萌针织玩偶",
+      "description": "把主角变成温暖的毛线角色。",
+      "category": "头像趣味",
+      "prompt": "创作主题：{{subject}}。\n把参考主体转化为手工针织玩偶，柔软毛线纹理、圆润比例、细小缝线，保留可辨识的配色与关键特征，干净背景，柔光。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/e94be75fdf293ab0a50941abcfd4380a59b74f1c738ff4e03409e6885eee0638.webp",
+      "tags": [
+        "头像趣味",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 70,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @ZHO_ZHO_ZHO",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/97",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-96",
+      "title": "专属动漫手办",
+      "description": "为自己设计一只展示级小手办。",
+      "category": "头像趣味",
+      "prompt": "创作主题：{{subject}}。\n将参考人物设计为原创动漫风收藏手办，保留发型、服装与身份特征，精致树脂材质，小型底座，工作室产品摄影，不使用现成IP标识。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/92c2e6ca0f41bd2b3889a456c445d867558e56601fc1c8c9e466a36e58809b58.webp",
+      "tags": [
+        "头像趣味",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 80,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/96",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-95",
+      "title": "摇头娃娃",
+      "description": "让熟悉的形象多一点俏皮。",
+      "category": "头像趣味",
+      "prompt": "创作主题：{{subject}}。\n将参考人物转成大头小身的摇头娃娃，表情生动，保留发型与服装特征，清楚呈现头身连接与玩具质感，简洁陈列摄影。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/a402f4538869bb22628f66462406a179e175a39616ad1e73b99e8fb19da86557.webp",
+      "tags": [
+        "头像趣味",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 90,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @thisdudelikesAI",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/95",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-73",
+      "title": "Q版钥匙扣",
+      "description": "用小小挂件收集日常的可爱。",
+      "category": "头像趣味",
+      "prompt": "创作主题：{{subject}}。\n把参考主体转化为Q版立体钥匙扣，圆润小巧，清楚的挂环与连接结构，材质真实，微距产品摄影，柔和背景。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/f7ddd476a259c35980ab0139df8f04589b66e5146ed563ca3ddb83393ca2791a.webp",
+      "tags": [
+        "头像趣味",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 100,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @azed_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/73",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-59",
+      "title": "鲜彩矢量海报",
+      "description": "适合活动预告、音乐与展览视觉。",
+      "category": "海报设计",
+      "prompt": "创作主题：{{subject}}。\n现代矢量平面风格，大色块与几何节奏，视觉焦点明确，标题与辅助信息形成清楚层级，颜色大胆但可读。\n色彩与氛围：{{mood}}。\n海报只使用以下准确标题文字：{{headline}}。留空则不添加文字，不擅自补充日期、地址或宣传承诺。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        },
+        {
+          "key": "headline",
+          "label": "海报标题",
+          "default": "",
+          "placeholder": "需要呈现的准确文字，可留空",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/a036e6dd075686a15c39eb9e00c8ae4e4be2e0c00000cc710b82a0cb17b4ba51.webp",
+      "tags": [
+        "海报设计",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 110,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @michaelrabone",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/59",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-49",
+      "title": "独立杂志封面",
+      "description": "让一个主题拥有编辑设计的气质。",
+      "category": "海报设计",
+      "prompt": "创作主题：{{subject}}。\n独立时尚杂志封面，主体摄影与精致字体编排结合，统一边距和网格，标题清晰突出，少量副标题，画面留白克制。\n色彩与氛围：{{mood}}。\n海报只使用以下准确标题文字：{{headline}}。留空则不添加文字，不擅自补充日期、地址或宣传承诺。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        },
+        {
+          "key": "headline",
+          "label": "海报标题",
+          "default": "",
+          "placeholder": "需要呈现的准确文字，可留空",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/80a55c07e3d801601c4f8271e551ed30dbcc60296b97714db273588e6c0efbb9.webp",
+      "tags": [
+        "海报设计",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 120,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/49",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-22",
+      "title": "社交图文封面",
+      "description": "把内容主题做成容易阅读的封面。",
+      "category": "海报设计",
+      "prompt": "创作主题：{{subject}}。\n适合手机阅读的中文图文封面，标题占主视觉，重点短句层级明确，主题配图与文字互不遮挡，清新配色，避免过量贴纸。\n色彩与氛围：{{mood}}。\n海报只使用以下准确标题文字：{{headline}}。留空则不添加文字，不擅自补充日期、地址或宣传承诺。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        },
+        {
+          "key": "headline",
+          "label": "海报标题",
+          "default": "",
+          "placeholder": "需要呈现的准确文字，可留空",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/010f7bc72ad9072d1206f22874266c77ae95504b1eac40e614e3fc1ee810728d.webp",
+      "tags": [
+        "海报设计",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 130,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @balconychy",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/22",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-9",
+      "title": "极简未来海报",
+      "description": "以少量元素表现现代科技感。",
+      "category": "海报设计",
+      "prompt": "创作主题：{{subject}}。\n极简未来主义视觉，单一中心装置或抽象主体，大面积负空间，细腻金属或玻璃材质，有节制的冷色光，清楚的标题排版。\n色彩与氛围：{{mood}}。\n海报只使用以下准确标题文字：{{headline}}。留空则不添加文字，不擅自补充日期、地址或宣传承诺。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        },
+        {
+          "key": "headline",
+          "label": "海报标题",
+          "default": "",
+          "placeholder": "需要呈现的准确文字，可留空",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/f3bcbc33b883441aa52ba98853e18bcf5e1a4f548589f0f467d08a65fffde184.webp",
+      "tags": [
+        "海报设计",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 140,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @ZHO_ZHO_ZHO",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/9",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-3",
+      "title": "复古印刷海报",
+      "description": "给主题加一层旧时光的纸张温度。",
+      "category": "海报设计",
+      "prompt": "创作主题：{{subject}}。\n复古印刷插画海报，有限色版、旧纸纹理与轻微套印偏移，鲜明主体与简洁大标题，手工感但文字清晰。\n色彩与氛围：{{mood}}。\n海报只使用以下准确标题文字：{{headline}}。留空则不添加文字，不擅自补充日期、地址或宣传承诺。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        },
+        {
+          "key": "headline",
+          "label": "海报标题",
+          "default": "",
+          "placeholder": "需要呈现的准确文字，可留空",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/502f9b58835918920f34ca3811027a10bcd0c47e1621f449c5f7beb2f24fa062.webp",
+      "tags": [
+        "海报设计",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1536",
+      "model": "gpt-image-2",
+      "order": 150,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/3",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-88",
+      "title": "轻松涂色线稿",
+      "description": "适合打印与简单的亲子创作。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n儿童涂色页，白底黑色清晰轮廓，大块封闭区域，线条流畅，细节适量，无灰阶和阴影，不出现复杂难涂的碎小区域。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/829548f00610dc337bfc4058b5f8419ab76a3373bee0d28146bca3eed7113dc4.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 160,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/88",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-77",
+      "title": "水晶球里的故事",
+      "description": "把一个小世界装进透明球体。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n透明水晶球内构建完整微缩场景，球面反射和折射自然，内部细节精致，前景与背景分明，梦幻柔光，具有叙事感。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/bc0de48b15b91da42b9d41cbdfeb6e2fb7e45353513ff8c7a8f9657417e9b7d0.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 170,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/77",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-71",
+      "title": "赛博微缩城市",
+      "description": "用一座小城表达未来想象。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n等距微缩赛博城市，精致建筑、道路和灯光，霓虹冷暖对比，空间结构合理，雨后反光，丰富细节中保留清晰主次。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/7e7164adce09046787c073850722c8fd002be1c7b90190ce4f24da055480c4dd.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 180,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 terry623",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/71",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-58",
+      "title": "云朵幻想",
+      "description": "轻盈、安静，适合日常壁纸。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n用柔软云朵构成主题形状，清透天空与柔和渐变，阳光穿过云层，细腻蓬松质感，画面疏朗，留出壁纸图标空间。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/6be1e6ba7f0b5a1d7c735df3ba72e3afcfd763d209a758db8b0e51e19ba42499.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 190,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @umesh_ai",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/58",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-52",
+      "title": "立体纸艺图标",
+      "description": "为一个概念做出有触感的小图标。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n分层纸艺图标，剪纸边缘清楚，纸张纹理细腻，层间阴影轻柔，中心构图，简洁背景，统一配色，不含多余文字。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/327f2baa27fc3209968814b6cd67d88692bb34710b3dbed343a4be9e740ec836.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 200,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @egeberkina",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/52",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-32",
+      "title": "纸雕绘本",
+      "description": "让一个场景像翻开的童话书。",
+      "category": "插画壁纸",
+      "prompt": "创作主题：{{subject}}。\n层叠纸雕绘本风格，前中后景由多层彩纸构成，轮廓简洁，细腻纸纹与柔和投影，温暖叙事，富有手作感。\n色彩与氛围：{{mood}}。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/6fcec0edd5cf9529b29f76c99aed797d5b43c9c79bf69d3e20f91620d2d5693c.webp",
+      "tags": [
+        "插画壁纸",
+        "文字创作"
+      ],
+      "reference_required": false,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 210,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/32",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-93",
+      "title": "玻璃材质改造",
+      "description": "改变材质，同时保留原有轮廓。",
+      "category": "图片修改",
+      "prompt": "创作主题：{{subject}}。\n仅将指定主体材质替换为透明玻璃，保留原有轮廓、姿态、构图与背景，反射折射符合原光线，接触阴影自然，不改动无关区域。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/719e505733c1e6ba737b4b82ca0b5ef3327d0910c4294f85bbcf09cdc0e00177.webp",
+      "tags": [
+        "图片修改",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 220,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @egeberkina",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/93",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    },
+    {
+      "id": "inspiration-27",
+      "title": "表情贴纸组",
+      "description": "把参考角色做成统一风格的表情。",
+      "category": "图片修改",
+      "prompt": "创作主题：{{subject}}。\n根据参考主体制作四格表情贴纸，开心、惊讶、委屈、加油四种情绪，主体形象一致，清楚的白色描边，纯净背景，每格独立完整，无额外文字。\n色彩与氛围：{{mood}}。\n以我上传的参考图为主体依据，保持人物身份特征或商品外观、结构、颜色与标识一致，不凭空新增配件。",
+      "fields": [
+        {
+          "key": "subject",
+          "label": "创作主题",
+          "default": "",
+          "placeholder": "例如：海边的夏日记忆",
+          "required": true
+        },
+        {
+          "key": "mood",
+          "label": "色彩与氛围",
+          "default": "自然、协调、有质感",
+          "placeholder": "例如：奶油白与浅绿，轻松清新",
+          "required": false
+        }
+      ],
+      "cover": "/template-media/ba9ff0919b58eeb8bda5f0bf7c7511470ea3843e2409f169085cc4904874e5e1.webp",
+      "tags": [
+        "图片修改",
+        "参考图"
+      ],
+      "reference_required": true,
+      "published": true,
+      "size": "1024x1024",
+      "model": "gpt-image-2",
+      "order": 230,
+      "source_name": "示例图 ©2025 @jamez-bondos；原案例提示词 @dotey",
+      "source_url": "https://github.com/jamez-bondos/awesome-gpt4o-images/tree/3ed4dbb0f1ae6f7385c81e1fcea48d9eefd2e596/cases/27",
+      "license": "示例图 CC BY 4.0；本站提示词重新编写",
+      "preview_note": "开源风格示例，仅缩放转码；并非本站实测效果。实际结果受模型、描述与参考图影响。"
+    }
+  ]
+}

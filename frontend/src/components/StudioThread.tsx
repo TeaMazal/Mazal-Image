@@ -112,7 +112,7 @@ export default function StudioThread({ openSidebar }: { openSidebar: () => void 
   return <section ref={threadRef} className="studio-thread">
     <div className="studio-thread-heading"><div><button className="studio-open-sidebar" aria-label="打开对话列表" onClick={openSidebar}>☰</button><h1>{conversation?.title || '新建对话'}</h1></div><span title="对话、作品和草稿仅保存在当前浏览器">自动保存到本机</span></div>
     <StudioWelcome />
-    {current.length === 0 ? <div className="studio-thread-empty"><p className="studio-eyebrow">一个对话，一段创作</p><h2>Turn ideas into images</h2><p>写下你的想法，或添加参考图。每一轮尝试，都会留在这个对话里。</p><div className="studio-thread-hints"><span>文字生成图片</span><span>参考图片创作</span><span>从结果继续修改</span></div></div> : <div className="studio-turn-list">{rounds.map((group, index) => <StudioTurn key={group[0].studioRoundId || group[0].id} tasks={group} index={index} />)}</div>}
+    {current.length === 0 ? <div className="studio-thread-empty"><p className="studio-eyebrow">一个对话，一段创作</p><h2>Turn ideas into images</h2><p>写下你的想法，或添加参考图。每一轮尝试，都会留在这个对话里。</p><button className="studio-empty-templates" onClick={() => useStore.getState().setStudioView('templates')}>从灵感模板开始 ↗</button><div className="studio-thread-hints"><span>文字生成图片</span><span>参考图片创作</span><span>从结果继续修改</span></div></div> : <div className="studio-turn-list">{rounds.map((group, index) => <StudioTurn key={group[0].studioRoundId || group[0].id} tasks={group} index={index} />)}</div>}
     {showJump && current.length > 0 && <button className="studio-jump-latest" onClick={jumpToLatest}>跳到最新创作 ↓</button>}
     <div className="studio-thread-end" />
   </section>

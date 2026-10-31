@@ -22,7 +22,8 @@ COPY backend/engine/api ./api
 COPY backend/engine/services ./services
 COPY backend/engine/utils ./utils
 COPY backend/engine/scripts ./scripts
-COPY backend/gateway_integration.py backend/site_config.py backend/maintenance.py ./
+COPY backend/gateway_integration.py backend/site_config.py backend/maintenance.py backend/image_protocols.py backend/prompt_library.py ./
+COPY backend/template_data ./template_data
 COPY --from=admin-build /src/web/out ./web_dist
 COPY LICENSE NOTICE.md ./licenses/
 COPY licenses/ ./licenses/third-party/
