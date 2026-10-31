@@ -41,6 +41,7 @@ export function useAuthGuard(allowedRoles?: AuthRole[]): UseAuthGuardResult {
       if (roleList.length > 0 && !roleList.includes(storedSession.role)) {
         setSession(storedSession);
         setIsCheckingAuth(false);
+        if (storedSession.role !== "admin") { window.location.assign("/"); return; }
         router.replace(getDefaultRouteForRole(storedSession.role));
         return;
       }
@@ -72,6 +73,7 @@ export function useRedirectIfAuthenticated() {
       }
 
       if (storedSession) {
+        if (storedSession.role !== "admin") { window.location.assign("/"); return; }
         router.replace(getDefaultRouteForRole(storedSession.role));
         return;
       }

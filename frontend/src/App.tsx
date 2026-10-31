@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
+import './studio.css'
 import { initStore, useStore } from './store'
 import { createMazalSettings } from './lib/mazalConfig'
 import { normalizeParamsForSettings } from './lib/paramCompatibility'
 import { useColorMode } from './hooks/useColorMode'
+import { useVisibleTasks } from './hooks/usePrivacyMode'
+import { getPageScroller } from './lib/pageScroll'
+import { isMazalEmbedded } from './lib/mazalSession'
+import StudioSidebar from './components/StudioSidebar'
+import StudioThread from './components/StudioThread'
+import StudioCompletionNotice from './components/StudioCompletionNotice'
 import { useGlobalClickSuppression } from './lib/clickSuppression'
 import MazalHeader from './components/MazalHeader'
 import MazalSettings from './components/MazalSettings'
@@ -28,8 +35,21 @@ export default function App() {
   const privacyModeEpoch = useStore((state) => state.privacyModeEpoch)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
+  const view = useStore((state) => state.studioView)
+  const activeId = useStore((state) => state.activeStudioConversationId)
+  const createConversation = useStore((state) => state.createStudioConversation)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const tasks = useVisibleTasks()
+  const imageCount = tasks.reduce((count, task) => count + task.outputImages.length, 0)
   useColorMode()
   useGlobalClickSuppression()
+
+  useEffect(() => {
+    if (!ready) return
+    if (view !== 'create') getPageScroller().scrollTo({ top: 0 })
+    useStore.getState().clearSelection()
+    setSidebarOpen(false)
+  }, [view, ready])
 
   useEffect(() => {
     if (!initialization) {
@@ -39,7 +59,7 @@ export default function App() {
       useStore.setState({ appMode: 'gallery', supportPromptDismissed: true, supportPromptOpen: false, params: normalizeParamsForSettings(state.params, settings) })
       initialization = initStore()
     }
-    void initialization.then(() => setReady(true)).catch(() => setError('无法打开本地作品库。请检查浏览器存储权限，或尝试退出隐私浏览模式后重试。'))
+    void initialization.then(() => { useStore.getState().initializeStudioConversations(); setReady(true) }).catch(() => setError('无法打开本地作品库。请检查浏览器存储权限，或尝试退出隐私浏览模式后重试。'))
   }, [])
 
   useEffect(() => {
@@ -53,17 +73,19 @@ export default function App() {
   if (error) return <main className="max-w-md mx-auto p-8 text-sm"><p role="alert">{error}</p><button className="text-blue-600 mt-4" onClick={() => location.reload()}>重新加载</button></main>
   if (!ready) return <div className="p-10 text-sm text-gray-500" role="status">正在打开你的创作空间…</div>
 
-  return <>
+  return <div className={`studio${isMazalEmbedded ? ' studio-embedded' : ''}`} data-studio-view={view}>
     <div data-page-scroll>
       <MazalHeader />
-      <main data-home-main data-drag-select-surface className="pb-48">
-        <div className="safe-area-x max-w-7xl mx-auto">
-          <SearchBar />
-          {filterFavorite && !activeFavoriteCollectionId ? <FavoriteCollectionsView /> : <TaskGrid />}
-        </div>
+      {view === 'create' && <StudioSidebar open={sidebarOpen} close={() => setSidebarOpen(false)} />}
+      <main data-home-main data-drag-select-surface className="studio-main">
+        {view === 'create' ? <StudioThread openSidebar={() => setSidebarOpen(true)} /> : <section className="studio-gallery">
+          <div className="studio-gallery-intro"><div><p className="studio-eyebrow">{view === 'favorites' ? '留住值得反复看的画面' : `${imageCount} 张图片，每一张都有来处`}</p><h1>{view === 'favorites' ? '你的收藏夹' : '作品画廊'}</h1><p>{view === 'favorites' ? '按主题整理灵感，随时回到原对话继续创作。' : '浏览所有对话的作品，找到灵感，再继续下一轮。'}</p></div><button className="studio-gallery-create" onClick={() => createConversation()}>＋ 新建对话</button></div>
+          <SearchBar studio />
+          {filterFavorite && !activeFavoriteCollectionId ? <FavoriteCollectionsView /> : <TaskGrid onlyOutputs />}
+        </section>}
       </main>
     </div>
-    <InputBar key={`input-${privacyModeEpoch}`} />
+    <InputBar key={`input-${privacyModeEpoch}-${activeId}`} />
     <DetailModal key={`detail-${privacyModeEpoch}`} />
     <Lightbox key={`lightbox-${privacyModeEpoch}`} />
     <MazalSettings />
@@ -72,9 +94,10 @@ export default function App() {
     <FavoriteCollectionPickerModal />
     <ManageCollectionsModal />
     <Toast />
+    <StudioCompletionNotice />
     <DbBlockedNotice />
     <MaskEditorModal key={`mask-${privacyModeEpoch}`} />
     <SketchBoardModal key={`sketch-${privacyModeEpoch}`} />
     <ImageContextMenu key={`menu-${privacyModeEpoch}`} />
-  </>
+  </div>
 }

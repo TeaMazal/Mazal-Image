@@ -1793,9 +1793,9 @@ function ImagePageContent({ isAdmin }: { isAdmin: boolean }) {
 }
 
 export default function ImagePage() {
-  const { isCheckingAuth, session } = useAuthGuard();
+  const { isCheckingAuth, session } = useAuthGuard(["admin"]);
 
-  if (isCheckingAuth || !session) {
+  if (isCheckingAuth || !session || session.role !== "admin") {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <LoaderCircle className="size-5 animate-spin text-stone-400" />

@@ -14,6 +14,7 @@ import { isAgentTaskPromptPending } from '../lib/taskPromptDisplay'
 import { getImageComments, getTaskPromptText, replaceImageMentionsForApi } from '../lib/promptImageMentions'
 import { getApiProviderLabel } from '../lib/apiProfiles'
 import { isTauri } from '../lib/platform'
+import { openStudioTask } from '../lib/studioActions'
 import { CloseIcon, CodeIcon, CopyIcon, DownloadIcon, EditIcon, LinkIcon, TrashIcon } from './icons'
 
 import ViewportTooltip from './ViewportTooltip'
@@ -1094,6 +1095,7 @@ export default function DetailModal() {
           </div>
 
           {/* 操作按钮 */}
+          {task.studioConversationId && <button className="text-sm text-gray-600 dark:text-gray-300 hover:underline" onClick={() => openStudioTask(task)}>回到原对话 ↗</button>}
           <div className="grid grid-cols-4 sm:flex gap-2 pt-4 border-t border-gray-100 dark:border-white/[0.08]">
             <button
               onClick={handleReuse}
@@ -1110,7 +1112,7 @@ export default function DetailModal() {
               className="col-span-2 sm:flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm font-medium whitespace-nowrap"
             >
               <EditIcon className="w-4 h-4 flex-shrink-0" />
-              编辑输出
+              继续修改
             </button>
             <button
               onClick={handleDelete}

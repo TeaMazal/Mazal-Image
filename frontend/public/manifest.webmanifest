@@ -1,12 +1,12 @@
 {
-  "name": "Mazal Image",
-  "short_name": "Mazal Image",
-  "description": "Mazal Image工作区",
+  "name": "Mazal 绘图",
+  "short_name": "Mazal 绘图",
+  "description": "Mazal 图片创作工作台",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#030712",
-  "theme_color": "#111827",
+  "background_color": "#f7f5ef",
+  "theme_color": "#24221e",
   "icons": [
     {
       "src": "./pwa-icon.svg",

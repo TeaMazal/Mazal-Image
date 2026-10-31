@@ -44,7 +44,7 @@ function SearchActionButton({
   )
 }
 
-export default function SearchBar() {
+export default function SearchBar({ studio = false }: { studio?: boolean }) {
   const rootRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const searchQuery = useStore((s) => s.searchQuery)
@@ -133,9 +133,9 @@ export default function SearchBar() {
 
   return (
     <div ref={rootRef} data-no-drag-select className="pt-6 pb-5 flex flex-wrap items-center gap-3">
-      <h2 className="mr-auto text-lg font-semibold tracking-tight">{filterFavorite ? '我的收藏' : '我的作品'}</h2>
+      {!studio && <h2 className="mr-auto text-lg font-semibold tracking-tight">{filterFavorite ? '我的收藏' : '我的作品'}</h2>}
       <div className="flex gap-2 flex-shrink-0 z-20">
-        {!privacyMode && (
+        {!privacyMode && (!studio || activeFavoriteCollectionId) && (
           <SearchActionButton
             tooltip={favoriteTooltip}
             onClick={handleFavoriteClick}

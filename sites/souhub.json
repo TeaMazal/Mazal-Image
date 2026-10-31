@@ -1,0 +1,16 @@
+{
+  "id": "souhub",
+  "name": "Souhub Image",
+  "mainOrigin": "https://souhub.top",
+  "publicOrigin": "https://img.souhub.top",
+  "downloadPrefix": "Souhub-Image",
+  "guideStorageKey": "souhub-studio-guide-v1",
+  "icon": "S",
+  "localEngineImageOnly": false,
+  "layout": "compose",
+  "root": "/opt/mazal-image",
+  "backendContainer": "mazal-image-backend-1",
+  "backendService": "backend",
+  "webContainer": "mazal-image-web-1",
+  "healthUrl": "http://127.0.0.1:8310/healthz"
+}

@@ -1,3 +1,4 @@
+import { openStudioTask } from '../lib/studioActions'
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { useStore, reuseConfig, editOutputs, removeTask, taskMatchesFilterStatus, taskMatchesSearchQuery } from '../store'
 import { ALL_FAVORITES_COLLECTION_ID, getTaskFavoriteCollectionIds } from '../lib/favoriteState'
@@ -8,7 +9,7 @@ import { useVirtualGrid } from '../hooks/useVirtualGrid'
 import { useVisibleTasks } from '../hooks/usePrivacyMode'
 import TaskCard from './TaskCard'
 
-export default function TaskGrid() {
+export default function TaskGrid({ onlyOutputs = false }: { onlyOutputs?: boolean }) {
   const tasks = useVisibleTasks()
   const searchQuery = useStore((s) => s.searchQuery)
   const filterStatus = useStore((s) => s.filterStatus)
@@ -42,6 +43,7 @@ export default function TaskGrid() {
     const q = searchQuery.trim().toLowerCase()
     
     return sorted.filter((t) => {
+      if (onlyOutputs && t.outputImages.length === 0) return false
       if (filterFavorite) {
         if (!t.isFavorite) return false
         if (activeFavoriteCollectionId && activeFavoriteCollectionId !== ALL_FAVORITES_COLLECTION_ID && !getTaskFavoriteCollectionIds(t, defaultFavoriteCollectionId).includes(activeFavoriteCollectionId)) return false
@@ -49,7 +51,7 @@ export default function TaskGrid() {
       if (!taskMatchesFilterStatus(t, filterStatus)) return false
       return taskMatchesSearchQuery(t, q)
     })
-  }, [tasks, searchQuery, filterStatus, filterFavorite, activeFavoriteCollectionId, defaultFavoriteCollectionId])
+  }, [tasks, searchQuery, filterStatus, filterFavorite, activeFavoriteCollectionId, defaultFavoriteCollectionId, onlyOutputs])
   // 框选的事件处理只在挂载时注册，通过 ref 读取最新列表
   const filteredTasksRef = useRef(filteredTasks)
   filteredTasksRef.current = filteredTasks
@@ -332,6 +334,7 @@ export default function TaskGrid() {
               onDelete={() => handleDelete(task)}
               isSelected={selectedTaskIds.includes(task.id)}
             />
+            {onlyOutputs && <button className="studio-return-conversation" onClick={() => openStudioTask(task)}>回到原对话 ↗</button>}
           </div>
         ))}
       </div>

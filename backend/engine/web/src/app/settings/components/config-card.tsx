@@ -86,7 +86,7 @@ export function ConfigCard() {
     <Card className="rounded-2xl border-white/80 bg-white/90 shadow-sm">
       <CardContent className="space-y-4 p-6">
         <div className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 text-stone-600">
-          管理员登录密钥继续从部署配置读取，不再在此页面展示；如需分发给其他人，请在下方创建普通用户密钥。
+          管理员登录密钥从部署配置读取。用户请使用 Sub2 签发的 API 密钥，本地用户密钥已停用。
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">

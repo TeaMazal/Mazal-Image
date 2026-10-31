@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { clearStoredAuthSession, type StoredAuthSession } from "@/store/auth";
 
 const adminNavItems = [
-  { href: "/image", label: "生图" },
+  { href: "/image", label: "生图测试" },
   { href: "/accounts", label: "号池管理" },
   { href: "/image-manager", label: "图片管理" },
   { href: "/logs", label: "日志管理" },
@@ -141,7 +141,7 @@ export function TopNav() {
               </SheetTrigger>
               <SheetContent side="left">
                 <SheetHeader>
-                  <SheetTitle>chatgpt2api</SheetTitle>
+                  <SheetTitle>Mazal 绘图 后台</SheetTitle>
                   <span className="text-xs text-stone-500 dark:text-stone-400">{roleLabel} · {displayName}</span>
                 </SheetHeader>
                 <nav className="mt-8 flex flex-col gap-1">
@@ -156,6 +156,7 @@ export function TopNav() {
                       </button>
                     </SheetClose>
                   ) : null}
+                  <SheetClose asChild><a href="/" className="rounded-xl px-3 py-2.5 text-sm font-medium">用户工作台</a></SheetClose>
                   {navItems.map((item) => {
                     const active = pathname === item.href;
                     const className = cn(
@@ -181,10 +182,10 @@ export function TopNav() {
               </SheetContent>
             </Sheet>
             <Link
-              href="/image"
+              href="/accounts"
               className="shrink-0 py-1 text-[15px] font-bold tracking-tight text-stone-950 transition hover:text-stone-700 dark:text-stone-50 dark:hover:text-white"
             >
-              chatgpt2api
+              Mazal 绘图
             </Link>
             <HeaderActions className="ml-auto sm:hidden" showGithubText={false} />
           </div>
@@ -198,6 +199,7 @@ export function TopNav() {
                 无限画布
               </button>
             ) : null}
+            <a href="/" className="shrink-0 whitespace-nowrap py-1 text-[15px] font-medium text-stone-500 hover:text-stone-900">用户工作台</a>
             {navItems.map((item) => {
               const active = pathname === item.href;
               return (

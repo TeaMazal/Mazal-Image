@@ -6077,3 +6077,254 @@ describe('Mazal transparent output and independent image batches', () => {
     expect(useStore.getState().showToast).toHaveBeenCalledWith(expect.stringContaining('每批最多 16 张'), 'error')
   })
 })
+
+describe('customer conversation task isolation', () => {
+  beforeEach(async () => {
+    await clearTasks()
+    await clearImages()
+    await putImage({ ...imageA, source: 'upload', createdAt: 1 })
+    await clearAgentConversations()
+    useStore.setState(useStore.getInitialState(), true)
+    const profile = createDefaultOpenAIProfile({ id: 'studio-test', provider: MAZAL_PROVIDER, apiKey: 'test-key' })
+    useStore.setState({
+      settings: normalizeSettings({ ...DEFAULT_SETTINGS, customProviders: [mazalProvider], profiles: [profile], activeProfileId: profile.id, retryMode: 'new', clearInputAfterSubmit: true, persistInputOnRestart: true }),
+      showToast: vi.fn(),
+      prompt: '', inputImages: [], tasks: [], params: { ...DEFAULT_PARAMS },
+    })
+    useStore.getState().initializeStudioConversations()
+    vi.mocked(callImageApi).mockReset().mockResolvedValue({ images: ['data:image/png;base64,c3R1ZGlv'] })
+    await new Promise((resolve) => setTimeout(resolve, 1001))
+  })
+
+  afterEach(() => {
+    stopBatchPrompts()
+    useStore.setState({ studioConversations: [], activeStudioConversationId: null })
+  })
+
+  it('captures the originating conversation before awaiting reference storage', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    useStore.setState({ prompt: '提交 A', inputImages: [imageA] })
+    const pending = submitTask()
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('不要清除 B')
+    await pending
+    await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
+    expect(useStore.getState().tasks[0]).toMatchObject({ studioConversationId: a, prompt: '提交 A', inputImageIds: [imageA.id] })
+    expect(useStore.getState().activeStudioConversationId).toBe(b)
+    expect(useStore.getState().prompt).toBe('不要清除 B')
+    expect(useStore.getState().showToast).toHaveBeenCalledWith('「提交 A」生成完成，共 1 张图片', 'success')
+    useStore.getState().setActiveStudioConversationId(a)
+    expect(useStore.getState().prompt).toBe('')
+  })
+
+  it('keeps the whole sequential batch in A while the user drafts in B', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    const first = deferred<Awaited<ReturnType<typeof callImageApi>>>()
+    vi.mocked(callImageApi).mockImplementationOnce(() => first.promise)
+    useStore.setState({ prompt: 'A 的三张图片', params: { ...DEFAULT_PARAMS, n: 3 } })
+    const pending = submitTask()
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(1))
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('B 的下一轮')
+    first.resolve({ images: ['data:image/png;base64,Zmlyc3Q='] })
+    await pending
+    expect(useStore.getState().tasks).toHaveLength(3)
+    expect(useStore.getState().tasks.every((item) => item.studioConversationId === a && item.status === 'done')).toBe(true)
+    const roundIds = new Set(useStore.getState().tasks.map((item) => item.studioRoundId))
+    expect(roundIds.size).toBe(1)
+    expect(roundIds.has(undefined)).toBe(false)
+    expect(useStore.getState().tasks.every((item) => item.studioRoundTotal === 3 && item.params.n === 1)).toBe(true)
+    expect(useStore.getState().activeStudioConversationId).toBe(b)
+    expect(useStore.getState().prompt).toBe('B 的下一轮')
+    expect(useStore.getState().detailTaskId).toBeNull()
+  })
+
+  it('returns from the gallery to the original round while preserving other drafts', async () => {
+    const { openStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    const source = task({ id: 'gallery-round', studioConversationId: a })
+    useStore.getState().setTasks([source])
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('B 的独立草稿')
+    useStore.getState().setStudioView('gallery')
+    openStudioTask(source)
+    expect(useStore.getState()).toMatchObject({ activeStudioConversationId: a, studioView: 'create', studioFocusedTaskId: source.id })
+    useStore.getState().setActiveStudioConversationId(b)
+    expect(useStore.getState().prompt).toBe('B 的独立草稿')
+    expect(useStore.getState().studioFocusedTaskId).toBeNull()
+  })
+
+  it('regenerates the complete round sequentially with a new shared identity and preserves originals', async () => {
+    const { requestRegenerateStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    const sources = [0, 1].map((index) => task({ id: `round-${index}`, studioConversationId: a, studioRoundId: 'old-round', studioRoundTotal: 2, studioRoundIndex: index, params: { ...DEFAULT_PARAMS, n: 1 } }))
+    useStore.getState().setTasks(sources)
+    requestRegenerateStudioTask(sources[0])
+    expect(callImageApi).not.toHaveBeenCalled()
+    await useStore.getState().confirmDialog!.action!()
+    const created = useStore.getState().tasks.filter((item) => !sources.some((source) => source.id === item.id))
+    expect(created).toHaveLength(2)
+    expect(new Set(created.map((item) => item.studioRoundId)).size).toBe(1)
+    expect(created[0].studioRoundId).not.toBe('old-round')
+    expect(callImageApi).toHaveBeenCalledTimes(2)
+    expect(useStore.getState().tasks).toEqual(expect.arrayContaining(sources))
+  })
+
+  it('deletes every member of a round only after confirmation', async () => {
+    const { requestDeleteStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    const sources = [0, 1].map((index) => task({ id: `delete-group-${index}`, studioConversationId: a, studioRoundId: 'delete-group', studioRoundTotal: 2 }))
+    const other = task({ id: 'keep-other-round', studioConversationId: a })
+    for (const source of [...sources, other]) await putDbTask(source)
+    useStore.getState().setTasks([...sources, other])
+    requestDeleteStudioTask(sources[0])
+    expect(useStore.getState().tasks).toHaveLength(3)
+    await useStore.getState().confirmDialog!.action!()
+    expect(useStore.getState().tasks).toEqual([other])
+  })
+
+  it('confirms regeneration and preserves originals even when overwrite mode is configured', async () => {
+    const { requestRegenerateStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    const source = task({ id: 'keep-original', studioConversationId: a, outputImages: ['original-image'], prompt: '原有作品' })
+    await putImage({ id: 'original-image', dataUrl: 'data:image/png;base64,b2xk', source: 'generated', createdAt: 1 })
+    await putDbTask(source)
+    useStore.getState().setTasks([source])
+    useStore.setState({ settings: { ...useStore.getState().settings, retryMode: 'overwriteAll' } })
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('B 的草稿')
+    requestRegenerateStudioTask(source)
+    expect(callImageApi).not.toHaveBeenCalled()
+    expect(useStore.getState().confirmDialog?.message).toContain('计费')
+    await useStore.getState().confirmDialog!.action!()
+    await vi.waitFor(() => expect(useStore.getState().tasks.filter((item) => item.status === 'done')).toHaveLength(2))
+    expect(useStore.getState().tasks.find((item) => item.id === source.id)).toEqual(source)
+    expect(useStore.getState().tasks.find((item) => item.id !== source.id)?.studioConversationId).toBe(a)
+    expect(await getImage('original-image')).toBeDefined()
+    expect(useStore.getState().activeStudioConversationId).toBe(b)
+    expect(useStore.getState().prompt).toBe('B 的草稿')
+  })
+
+  it('waits for delete confirmation and retains images used by another round', async () => {
+    const { requestDeleteStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    const source = task({ id: 'delete-round', studioConversationId: a, outputImages: ['shared-image'] })
+    const other = task({ id: 'keep-round', studioConversationId: a, inputImageIds: ['shared-image'] })
+    await putImage({ id: 'shared-image', dataUrl: 'data:image/png;base64,c2hhcmVk', source: 'generated', createdAt: 1 })
+    await putDbTask(source)
+    await putDbTask(other)
+    useStore.getState().setTasks([source, other])
+    requestDeleteStudioTask(source)
+    expect(useStore.getState().tasks).toHaveLength(2)
+    useStore.getState().setConfirmDialog(null)
+    expect(useStore.getState().tasks).toHaveLength(2)
+    requestDeleteStudioTask(source)
+    await useStore.getState().confirmDialog!.action!()
+    expect(useStore.getState().tasks.map((item) => item.id)).toEqual(['keep-round'])
+    expect(await getImage('shared-image')).toBeDefined()
+  })
+
+  it('does not delete a round that starts recovering while confirmation is open', async () => {
+    const { requestDeleteStudioTask } = await import('./lib/studioActions')
+    const source = task({ id: 'recovering-round', studioConversationId: useStore.getState().activeStudioConversationId! })
+    await putDbTask(source)
+    useStore.getState().setTasks([source])
+    requestDeleteStudioTask(source)
+    useStore.getState().setTasks([{ ...source, customRecoverable: true }])
+    await useStore.getState().confirmDialog!.action!()
+    expect(useStore.getState().tasks).toHaveLength(1)
+  })
+
+  it('retries a failed task in its own conversation without moving B', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    const failed = task({ id: 'failed-a', studioConversationId: a, status: 'error', error: 'synthetic' })
+    useStore.getState().setTasks([failed])
+    await putDbTask(failed)
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('B 草稿')
+    await retryTask(failed)
+    await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
+    expect(useStore.getState().tasks[0].studioConversationId).toBe(a)
+    expect(useStore.getState().tasks[0].id).not.toBe('failed-a')
+    expect(useStore.getState().activeStudioConversationId).toBe(b)
+    expect(useStore.getState().prompt).toBe('B 草稿')
+  })
+
+  it('does not erase a newer draft typed while submission was saving references', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    useStore.setState({ prompt: '已提交内容', inputImages: [imageA] })
+    const pending = submitTask()
+    useStore.getState().setPrompt('新编辑的内容')
+    await pending
+    await vi.waitFor(() => expect(useStore.getState().tasks[0]?.status).toBe('done'))
+    expect(useStore.getState().activeStudioConversationId).toBe(a)
+    expect(useStore.getState().prompt).toBe('新编辑的内容')
+    expect(useStore.getState().tasks[0].prompt).toBe('已提交内容')
+  })
+
+  it('retains and hydrates a reference held only by an inactive draft', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    await putImage({ id: 'inactive-only', dataUrl: 'data:image/png;base64,aW5hY3RpdmU=', source: 'upload', createdAt: 1 })
+    useStore.setState({ inputImages: [{ id: 'inactive-only', dataUrl: '' }], prompt: 'A 草稿' })
+    useStore.getState().createStudioConversation()
+    await initStore()
+    useStore.getState().initializeStudioConversations()
+    expect(await getImage('inactive-only')).toBeDefined()
+    useStore.getState().setActiveStudioConversationId(a)
+    expect(useStore.getState().inputImages[0].dataUrl).toBe('data:image/png;base64,aW5hY3RpdmU=')
+    expect(useStore.getState().prompt).toBe('A 草稿')
+  })
+
+  it('finishes preparing references in A even after the user switches to B', async () => {
+    const { prepareStudioTask } = await import('./lib/studioActions')
+    const a = useStore.getState().activeStudioConversationId!
+    await putImage({ id: 'reuse-reference', dataUrl: 'data:image/png;base64,cmV1c2U=', source: 'upload', createdAt: 1 })
+    const source = task({ studioConversationId: a, inputImageIds: ['reuse-reference'], prompt: '复用 A' })
+    const pending = prepareStudioTask(source, 'reuse')
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().setPrompt('保持 B')
+    await pending
+    expect(useStore.getState().activeStudioConversationId).toBe(b)
+    expect(useStore.getState().prompt).toBe('保持 B')
+    expect(useStore.getState().inputImages).toEqual([])
+    useStore.getState().setActiveStudioConversationId(a)
+    expect(useStore.getState().prompt).toBe('复用 A')
+    expect(useStore.getState().inputImages[0].id).toBe('reuse-reference')
+  })
+
+  it('clears the completed round mask only in its originating conversation', async () => {
+    const a = useStore.getState().activeStudioConversationId!
+    const mask = { targetImageId: 'mask-reference', maskDataUrl: 'data:image/png;base64,bWFzaw==', updatedAt: 1 }
+    await putImage({ id: 'mask-reference', dataUrl: 'data:image/png;base64,cmVm', source: 'upload', createdAt: 1 })
+    await putImage({ id: 'mask-output', dataUrl: mask.maskDataUrl, source: 'mask', createdAt: 1 })
+    const source = task({ id: 'mask-task', studioConversationId: a, status: 'error', inputImageIds: ['mask-reference'], maskTargetImageId: 'mask-reference', maskImageId: 'mask-output' })
+    useStore.getState().setTasks([source])
+    await putDbTask(source)
+    useStore.getState().patchStudioDraft(a, { maskDraft: mask })
+    const first = deferred<Awaited<ReturnType<typeof callImageApi>>>()
+    vi.mocked(callImageApi).mockImplementationOnce(() => first.promise)
+    await retryTask(source)
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(1))
+    const b = useStore.getState().createStudioConversation()
+    useStore.getState().patchStudioDraft(b, { maskDraft: mask })
+    first.resolve({ images: ['data:image/png;base64,b3V0'] })
+    await vi.waitFor(() => expect(useStore.getState().tasks[0].status).toBe('done'))
+    expect(useStore.getState().maskDraft).toEqual(mask)
+    useStore.getState().setActiveStudioConversationId(a)
+    expect(useStore.getState().maskDraft).toBeNull()
+  })
+
+  it('imports task associations and conversation metadata from backups', async () => {
+    const id = 'backup-conversation'
+    const imported = task({ id: 'backup-task', studioConversationId: id })
+    const conversation = {
+      id, title: '备份的创作', autoTitle: false, pinned: true, createdAt: 1, updatedAt: 2,
+      draft: { prompt: '备份草稿', inputImages: [], maskDraft: null, maskEditorImageId: null, params: { ...DEFAULT_PARAMS } },
+    }
+    await importData(importFile({ version: 3, exportedAt: new Date(2).toISOString(), tasks: [imported], studioConversations: [conversation] }))
+    expect(useStore.getState().tasks.find((item) => item.id === 'backup-task')?.studioConversationId).toBe(id)
+    useStore.getState().setActiveStudioConversationId(id)
+    expect(useStore.getState().prompt).toBe('备份草稿')
+    expect(useStore.getState().studioConversations.find((item) => item.id === id)).toMatchObject({ title: '备份的创作', pinned: true })
+  })
+})

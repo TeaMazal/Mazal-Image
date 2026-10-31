@@ -2084,6 +2084,9 @@ class OpenAIBackendAPI:
             if role == "assistant" and not (is_image_gen or has_asset_pointer):
                 continue
             file_ids, sediment_ids = self._extract_image_reference_ids({"content": content, "metadata": metadata})
+            input_ids = getattr(self, "_image_input_file_ids", set())
+            file_ids = [item for item in file_ids if item not in input_ids]
+            sediment_ids = [item for item in sediment_ids if item not in input_ids]
             if not is_image_gen and not has_asset_pointer and not file_ids and not sediment_ids:
                 continue
             records.append(
@@ -2408,6 +2411,9 @@ class OpenAIBackendAPI:
 
     def _resolve_image_urls(self, conversation_id: str, file_ids: list[str], sediment_ids: list[str]) -> list[str]:
         """把图片结果 id 解析成可下载 URL。"""
+        input_ids = getattr(self, "_image_input_file_ids", set())
+        file_ids = [item for item in file_ids if item not in input_ids]
+        sediment_ids = [item for item in sediment_ids if item not in input_ids]
         urls = []
         skip_patterns = {"file_upload"}
         for file_id in file_ids:
@@ -2488,8 +2494,9 @@ class OpenAIBackendAPI:
             poll: bool = True,
             poll_timeout_secs: float | None = None,
     ) -> list[str]:
-        file_ids = [item for item in file_ids if item != "file_upload"]
-        sediment_ids = list(sediment_ids)
+        input_ids = getattr(self, "_image_input_file_ids", set())
+        file_ids = [item for item in file_ids if item != "file_upload" and item not in input_ids]
+        sediment_ids = [item for item in sediment_ids if item not in input_ids]
         timeout = poll_timeout_secs if poll_timeout_secs is not None else config.image_poll_timeout_secs
         # 当 check-before-hit 和 settle 均已关闭，且 SSE 已给出 file_ids 时，
         # 跳过轮询直接解析 URL，省去 initial_wait + 轮询耗时。
@@ -2605,6 +2612,8 @@ class OpenAIBackendAPI:
             raise RuntimeError("access_token is required for image endpoints")
         self._report_progress("uploading")
         references = [self._upload_image(image, f"image_{idx}.png") for idx, image in enumerate(images, start=1)]
+        # 参考图也会出现在工具元数据及流式补丁中，不能当作生成结果。
+        self._image_input_file_ids = {str(item["file_id"]) for item in references if item.get("file_id")}
         self._report_progress("bootstrapping")
         self._bootstrap()
         self._report_progress("getting_token")

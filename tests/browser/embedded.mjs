@@ -30,7 +30,7 @@ async function check(name, run) {
   console.log('PASS ' + name)
 }
 async function ready(page) {
-  await page.frameLocator('iframe').getByRole('heading', { name: '我的作品', exact: true }).waitFor({ timeout: 20000 })
+  await page.frameLocator('iframe').getByRole('navigation', { name: '用户工作台导航' }).waitFor({ timeout: 20000 })
   await page.locator('#status').filter({ hasText: '已连接' }).waitFor()
 }
 function observe(page) {
@@ -47,10 +47,10 @@ try {
     await standalone.goto(drawing.href)
     await standalone.getByRole('textbox', { name: '主站 API 密钥', exact: true }).fill('mock-customer-key')
     await standalone.getByRole('button', { name: '进入绘图工作区', exact: true }).click()
-    await standalone.getByRole('heading', { name: '我的作品', exact: true }).waitFor()
+    await standalone.getByRole('navigation', { name: '用户工作台导航' }).waitFor()
     await standalone.evaluate(() => navigator.serviceWorker.ready.then(() => true))
     await standalone.reload()
-    await standalone.getByRole('heading', { name: '我的作品', exact: true }).waitFor()
+    await standalone.getByRole('navigation', { name: '用户工作台导航' }).waitFor()
     assert.ok(await standalone.evaluate(() => !!navigator.serviceWorker.controller))
   })
   const page = await context.newPage()
@@ -93,7 +93,7 @@ try {
     await accepted
     await page.reload()
     await ready(page)
-    await page.frameLocator('iframe').getByRole('button', { name: '查看作品：' + prompt, exact: true }).locator('img[data-image-id]').waitFor({ timeout: 20000 })
+    await page.frameLocator('iframe').getByRole('button', { name: '查看生成图片：' + prompt, exact: true }).locator('img').waitFor({ timeout: 20000 })
     assert.equal(submissions, 1)
     for (let i = 0; i < 2; i++) { await page.reload(); await ready(page) }
     const after = await (await context.request.get(new URL('/test-counts', main).href)).json()
@@ -114,6 +114,7 @@ try {
     currentPage = standalone
     await standalone.reload()
     await standalone.getByRole('button', { name: /余额 \$12\.3456/ }).waitFor()
+    await standalone.getByRole('button', { name: '作品画廊', exact: true }).click()
     await standalone.getByRole('button', { name: '查看作品：' + prompt, exact: true }).locator('img[data-image-id]').waitFor()
     await standalone.screenshot({ path: path.join(destination, engine + '-standalone.png') })
   })

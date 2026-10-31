@@ -100,7 +100,8 @@ def gateway_request(path, token, client_ip, *, data=None, content_type=None, tim
 def local_identity(token):
     if config.auth_key and hmac.compare_digest(token.encode('utf-8'), str(config.auth_key).encode('utf-8')):
         return {'id': 'admin', 'name': '管理员', 'role': 'admin'}
-    return auth_service.authenticate(token) if token else None
+    identity = auth_service.authenticate(token) if token else None
+    return identity if identity and identity.get("role") == "admin" else None
 
 
 def customer_identity(token):
@@ -207,7 +208,10 @@ def require_identity(authorization=None):
     if token and context.get('token') == token and context.get('identity'):
         return context['identity']
     # Fail closed outside a validated HTTP request. No local copy of customer keys.
-    return ORIGINAL_IDENTITY(authorization)
+    identity = ORIGINAL_IDENTITY(authorization)
+    if identity.get("role") != "admin":
+        raise HTTPException(403, detail={"error": "本地用户密钥已禁用，请使用 Sub2 签发的 API 密钥"})
+    return identity
 
 
 support.require_identity = require_identity
@@ -502,7 +506,7 @@ class CustomerGateway:
                 context['identity'] = identity
                 # Local credentials power the drawing engine, never a chat provider.
                 # Keep model synchronization from advertising upstream chat models.
-                if path.startswith('/v1/'):
+                if path.startswith('/v1/') and os.environ.get('MI_LOCAL_ENGINE_IMAGE_ONLY', '1') == '1':
                     if path == '/v1/models' and scope['method'] in ('GET', 'HEAD'):
                         return await JSONResponse({'object': 'list', 'data': [
                             {'id': 'gpt-image-2', 'object': 'model', 'created': 0, 'owned_by': 'mazal-image'}
@@ -568,7 +572,7 @@ async def serve_admin_asset(full_path: str):
     if full_path == 'favicon.ico':
         return RedirectResponse('/pwa-icon.svg', status_code=302)
     allowed = re.fullmatch(
-        r'(?:accounts|settings|logs|debug|image-manager|login)'
+        r'(?:image|accounts|settings|logs|debug|image-manager|login)'
         r'(?:/?|/index\.(?:html|txt)|/__next\.[A-Za-z0-9_.-]+(?:/__PAGE__)?\.txt)'
         r'|_next/static/[^\\\x00]+'
         r'|(?:openai|github)\.svg', full_path)

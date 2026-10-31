@@ -14,8 +14,8 @@ parser.add_argument('--forbid-value', action='append', default=[], help='Private
 args = parser.parse_args()
 if not (str(args.output).endswith('.tar.gz') or args.output.suffix.lower() == '.zip'):
     parser.error('--output must end in .tar.gz or .zip')
-directories = {'frontend', 'backend', 'deploy', 'docs', 'tests', 'scripts', 'licenses', 'integrations', '.github'}
-root_files = {'README.md', 'LICENSE', 'NOTICE.md', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
+directories = {'frontend', 'backend', 'deploy', 'docs', 'tests', 'scripts', 'sites', 'licenses', 'integrations', '.github'}
+root_files = {'AGENTS.md', 'README.md', 'LICENSE', 'NOTICE.md', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
               'compose.yml', '.env.example', '.gitignore', '.dockerignore', 'VERSION', 'SOURCE.json'}
 skip = {'node_modules', 'dist', 'out', '.next', 'target', '__pycache__', '.git', 'state', 'backups', 'artifacts', '.wrangler'}
 patterns = [re.compile(p) for p in (

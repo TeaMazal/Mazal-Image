@@ -56,13 +56,14 @@ export default function AddImageUrlsModal({ onClose }: { onClose: () => void }) 
     setErrorLines(new Set())
     setProgress({ done: 0, total: urls.length })
     // 弹窗随隐私模式切换卸载时停止添加，避免参考图出现在切换后的输入框中
+    const conversationId = useStore.getState().activeStudioConversationId
     const epoch = useStore.getState().privacyModeEpoch
     const countBefore = useStore.getState().inputImages.length
     const failures: Array<{ url: string; reason: string }> = []
     for (const url of urls) {
       if (useStore.getState().privacyModeEpoch !== epoch) return
       try {
-        await addImageFromUrl(url)
+        await addImageFromUrl(url, conversationId)
       } catch (err) {
         console.warn('addImageFromUrl failed', url, err)
         failures.push({

@@ -1,0 +1,16 @@
+FROM node:22-alpine AS admin-build
+WORKDIR /src
+COPY backend/engine/VERSION backend/engine/CHANGELOG.md ./
+COPY backend/engine/web/package.json backend/engine/web/package-lock.json ./web/
+WORKDIR /src/web
+RUN npm ci --no-audit --no-fund
+COPY backend/engine/web/ ./
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=--max-old-space-size=2048
+RUN npm run build
+FROM mazal-image:before-studio-sync-20261030t155408z
+COPY backend/engine/services /app/services
+COPY backend/engine/api /app/api
+COPY backend/engine/utils /app/utils
+COPY backend/gateway_integration.py backend/site_config.py /app/
+COPY --from=admin-build /src/web/out /app/web_dist

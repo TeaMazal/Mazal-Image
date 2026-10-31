@@ -253,6 +253,12 @@ export type TaskStatus = 'running' | 'done' | 'error'
 
 export interface TaskRecord {
   id: string
+  /** 用户创作空间中的对话归属；旧记录归入历史创作 */
+  studioConversationId?: string
+  /** 同一次创作提交的单张任务归属，供前端合并展示 */
+  studioRoundId?: string
+  studioRoundTotal?: number
+  studioRoundIndex?: number
   prompt: string
   params: TaskParams
   /** 生成时使用的 Provider 类型 */
@@ -329,6 +335,22 @@ export interface TaskRecord {
   agentBatchItemId?: string
   /** Agent 图像工具实际动作 */
   agentToolAction?: 'generate' | 'edit' | 'auto' | string
+}
+
+export type StudioView = 'create' | 'gallery' | 'favorites'
+
+export interface StudioDraft extends AgentInputDraft {
+  params: TaskParams
+}
+
+export interface StudioConversation {
+  id: string
+  title: string
+  autoTitle: boolean
+  pinned: boolean
+  createdAt: number
+  updatedAt: number
+  draft: StudioDraft
 }
 
 export interface FavoriteCollection {
@@ -539,6 +561,7 @@ export interface ExportData {
   favoriteCollections?: FavoriteCollection[]
   defaultFavoriteCollectionId?: string | null
   agentConversations?: AgentConversation[]
+  studioConversations?: StudioConversation[]
   /** imageId → 图片信息 */
   imageFiles?: Record<string, {
     path: string

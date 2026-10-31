@@ -30,6 +30,7 @@ import ButtonTooltip from './input/buttonTooltip'
 import DragUploadOverlay from './input/dragUploadOverlay'
 import InputBatchBars from './input/inputBatchBars'
 import InputParamsPanel from './input/inputParamsPanel'
+import StudioPriceEstimate from './StudioPriceEstimate'
 
 function getFavoriteCollectionTasksForBatch(collectionId: string, tasks: TaskRecord[], defaultFavoriteCollectionId: string | null) {
   const favoriteTasks = tasks.filter((task) => task.isFavorite)
@@ -493,7 +494,7 @@ export default function InputBar() {
     : '批量任务进行中，请等待完成或停止后再提交'
   const promptPlaceholder = batchEnabled
     ? '每条提示词之间空两行分隔，可输入 @ 来指定参考图...'
-    : '描述你想生成的图片，可输入 @ 来指定参考图...'
+    : '描述你想要的画面，或添加参考图继续修改…'
   const submitCurrentMode = useCallback(() => {
     if (appMode === 'agent') {
       void submitAgentMessage()
@@ -851,6 +852,7 @@ export default function InputBar() {
   }
 
   const handleFiles = async (files: FileList | File[]) => {
+    const conversationId = useStore.getState().activeStudioConversationId
     try {
       const currentCount = useStore.getState().inputImages.length
       if (currentCount >= MAX_INPUT_IMAGES) {
@@ -867,7 +869,7 @@ export default function InputBar() {
       const discarded = accepted.length - toAdd.length
 
       for (const file of toAdd) {
-        await addImageFromFile(file)
+        await addImageFromFile(file, conversationId)
       }
 
       if (discarded > 0) {
@@ -1028,6 +1030,7 @@ export default function InputBar() {
         return
       }
 
+      const conversationId = useStore.getState().activeStudioConversationId
       const transferredText = e.dataTransfer?.getData('text/plain')
       
       const imageIds = transferredText?.startsWith('agent-images:') 
@@ -1043,7 +1046,8 @@ export default function InputBar() {
             showToast('部分图片已不存在', 'error')
             return
           }
-          addInputImage({ id: imageId, dataUrl })
+          if (conversationId) useStore.getState().addStudioReference(conversationId, { id: imageId, dataUrl })
+          else addInputImage({ id: imageId, dataUrl })
         })).then(() => {
           showToast('已上传图片', 'success')
         }).catch((err) => showToast(`上传图片失败：${err instanceof Error ? err.message : String(err)}`, 'error'))
@@ -1764,6 +1768,7 @@ export default function InputBar() {
 
       <div
         data-input-bar
+        aria-label="创作输入区"
         className={`fixed bottom-3 sm:bottom-5 left-[calc((100%-var(--page-scrollbar-width))/2)] -translate-x-1/2 z-30 w-[calc(100%-var(--page-scrollbar-width))] max-w-7xl px-4 transition-all duration-300${promptExpanded ? ' flex flex-col' : ''}`}
         style={promptExpanded ? { top: `${promptExpandedTop}px`, transitionProperty: 'none' } : undefined}
       >
@@ -1787,7 +1792,7 @@ export default function InputBar() {
             onDeleteSelected={handleDeleteSelected}
           />
         </div>
-        <div ref={cardRef} className={`bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border border-gray-200/70 dark:border-white/[0.08] shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] rounded-2xl p-3${promptExpanded ? ' flex min-h-0 flex-1 flex-col' : ''}`}>
+        <div ref={cardRef} className={`studio-composer bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border border-gray-200/70 dark:border-white/[0.08] shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] rounded-2xl p-3${promptExpanded ? ' flex min-h-0 flex-1 flex-col' : ''}`}>
           {/* 移动端拖动条 */}
           <div
             ref={handleRef}
@@ -1914,6 +1919,8 @@ export default function InputBar() {
                 syncMentionTagSelection(el)
               }}
               aria-label={promptPlaceholder}
+              role="textbox"
+              aria-multiline="true"
               className={`col-start-1 row-start-1 min-h-[42px] w-full overflow-hidden ios-rounded-scroll-fix whitespace-pre-wrap break-words rounded-xl border border-transparent bg-transparent pl-2 pr-10 py-2 text-sm leading-relaxed outline-none transition-[border-color,box-shadow] duration-200 focus:ring-1 focus:ring-blue-300/40 dark:text-gray-100 dark:focus:ring-blue-500/30${promptExpanded ? ' !h-full !overflow-y-auto' : ''}`}
             />
             {prompt.length === 0 && (
@@ -1975,7 +1982,8 @@ export default function InputBar() {
             <div className="hidden sm:flex items-center justify-between gap-3">
               {renderParams()}
 
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                 {renderAddImageButton(false)}
                 <div
                   className="relative"
@@ -1991,11 +1999,11 @@ export default function InputBar() {
                         ? 'bg-red-500 text-white hover:bg-red-600'
                         : !hasSubmitApiConfig
                         ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
-                        : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
+                        : 'studio-submit text-white disabled:opacity-40 disabled:cursor-not-allowed'
                     }`}
                     aria-label={submitButtonAriaLabel}
                   >
-                    {activeProfile.provider === MAZAL_PROVIDER && <span>{activeAgentIsRunning ? '停止' : '生成'}</span>}
+                    {activeProfile.provider === MAZAL_PROVIDER && <span>{activeAgentIsRunning ? '停止' : `生成 ${params.n * (batchEnabled ? batchPromptCount : 1)} 张`}</span>}
                     {activeAgentIsRunning ? (
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <rect x="7" y="7" width="10" height="10" rx="1.5" />
@@ -2020,6 +2028,7 @@ export default function InputBar() {
               </div>
 
               <div className="flex items-center gap-2">
+                {isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                 {renderAddImageButton(true)}
                 <div
                   className="relative flex-1"
@@ -2036,7 +2045,7 @@ export default function InputBar() {
                         ? 'bg-red-500 text-white hover:bg-red-600'
                         : !hasSubmitApiConfig
                         ? 'bg-gray-300 dark:bg-white/[0.06] text-white cursor-pointer'
-                        : 'bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300 dark:disabled:bg-white/[0.04] disabled:opacity-50 disabled:cursor-not-allowed'
+                        : 'studio-submit text-white disabled:opacity-40 disabled:cursor-not-allowed'
                     }`}
                   >
                     {activeAgentIsRunning ? (

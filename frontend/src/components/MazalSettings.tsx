@@ -29,11 +29,11 @@ export default function MazalSettings() {
         <p className="text-xs leading-6 text-gray-500">张数可选 1～4 张，每张建立独立任务，按主站规则计费。多条描述可共用参考图和参数，每批最多 16 张，按顺序生成；停止只影响尚未提交的图片。局部编辑由模型参考遮罩修改，不能保证遮罩外像素完全不变。</p>
       </>}
       {tab === 'data' && <>
-        <p className="text-xs leading-6 text-gray-500">作品按当前登录密钥保存在此浏览器。退出不会删除作品；清除浏览器数据会丢失本地记录。服务器缓存约保留 3 天，并可能因容量限制提前清理。</p>
-        <button onClick={() => { close(false); void exportData({ exportConfig: false, exportTasks: true }) }} className="w-full rounded-xl bg-blue-600 px-4 py-3 text-white">导出作品备份（不含密钥）</button>
+        <p className="text-xs leading-6 text-gray-500">对话、草稿和作品按当前登录密钥保存在此浏览器。退出不会删除作品；清除浏览器数据会丢失本地记录。服务器缓存约保留 3 天，并可能因容量限制提前清理。</p>
+        <button onClick={() => { close(false); void exportData({ exportConfig: false, exportTasks: true }) }} className="w-full rounded-xl bg-blue-600 px-4 py-3 text-white">导出对话与作品备份（不含密钥）</button>
         <input ref={importInput} type="file" accept=".zip" multiple className="hidden" onChange={(event) => { const files = Array.from(event.target.files ?? []); event.target.value = ''; if (files.length) { close(false); void importData(files, { importConfig: false, importTasks: true }) } }} />
         <button onClick={() => importInput.current?.click()} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">导入作品备份</button>
-        <button onClick={() => { close(false); confirm({ title: '清空本地作品', message: '这会删除当前密钥在此浏览器中的作品、参考图和历史记录。请先下载或导出重要作品。', confirmText: '清空作品', action: () => { void clearData({ clearConfig: false, clearTasks: true }) } }) }} className="w-full rounded-xl border border-red-200 dark:border-red-900 px-4 py-3 text-red-600">清空本地作品</button>
+        <button onClick={() => { close(false); confirm({ title: '清空本地作品', message: '这会删除当前密钥在此浏览器中的对话、草稿、作品和参考图。请先下载或导出重要作品。', confirmText: '清空作品', action: () => { void clearData({ clearConfig: false, clearTasks: true }) } }) }} className="w-full rounded-xl border border-red-200 dark:border-red-900 px-4 py-3 text-red-600">清空本地作品</button>
       </>}
       {tab === 'about' && <>
         <p className="font-semibold">{siteConfig.name} · 整合版 1.1</p>

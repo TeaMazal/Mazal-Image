@@ -168,11 +168,7 @@ def create_router() -> APIRouter:
     @router.post("/api/auth/users")
     async def create_user_key(body: UserKeyCreateRequest, authorization: str | None = Header(default=None)):
         require_admin(authorization)
-        try:
-            item, raw_key = auth_service.create_key(role="user", name=body.name)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
-        return {"item": item, "key": raw_key, "items": auth_service.list_keys(role="user")}
+        raise HTTPException(status_code=403, detail={"error": "本地用户密钥创建与修改已禁用，请在 Sub2 管理用户密钥"})
 
     @router.post("/api/auth/users/{key_id}")
     async def update_user_key(
@@ -181,24 +177,7 @@ def create_router() -> APIRouter:
             authorization: str | None = Header(default=None),
     ):
         require_admin(authorization)
-        updates = {
-            key: value
-            for key, value in {
-                "name": body.name,
-                "enabled": body.enabled,
-                "key": body.key,
-            }.items()
-            if value is not None
-        }
-        if not updates:
-            raise HTTPException(status_code=400, detail={"error": "还没有检测到改动，请修改后再保存"})
-        try:
-            item = auth_service.update_key(key_id, updates, role="user")
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail={"error": str(exc)}) from exc
-        if item is None:
-            raise HTTPException(status_code=404, detail={"error": "这条用户密钥不存在，可能已经被删除"})
-        return {"item": item, "items": auth_service.list_keys(role="user")}
+        raise HTTPException(status_code=403, detail={"error": "本地用户密钥创建与修改已禁用，请在 Sub2 管理用户密钥"})
 
     @router.delete("/api/auth/users/{key_id}")
     async def delete_user_key(key_id: str, authorization: str | None = Header(default=None)):

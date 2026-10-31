@@ -52,6 +52,13 @@ export function logoutMazal() {
   window.location.replace('/')
 }
 
+export class MazalRequestError extends Error {
+  constructor(message: string, public status: number) {
+    super(message)
+    this.name = 'MazalRequestError'
+  }
+}
+
 export async function mazalRequest<T>(path: string, init: RequestInit = {}, key = getMazalKey()): Promise<T> {
   const response = await fetch(path, {
     ...init,
@@ -66,7 +73,7 @@ export async function mazalRequest<T>(path: string, init: RequestInit = {}, key 
   const body = await response.json().catch(() => null)
   if (!response.ok) {
     const error = body?.detail?.error ?? body?.error?.message ?? body?.detail ?? body?.message
-    throw new Error(typeof error === 'string' ? error : `请求失败（${response.status}），请稍后重试`)
+    throw new MazalRequestError(typeof error === 'string' ? error : `请求失败（${response.status}），请稍后重试`, response.status)
   }
   return body as T
 }

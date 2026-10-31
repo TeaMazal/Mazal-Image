@@ -35,6 +35,7 @@ export default function LoginPage() {
         subjectId: data.subject_id,
         name: data.name,
       });
+      if (data.role !== "admin") { window.location.assign("/"); return; }
       router.replace(getDefaultRouteForRole(data.role));
     } catch (error) {
       const message = error instanceof Error ? error.message : "登录失败";
@@ -63,7 +64,7 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <h1 className="text-3xl font-semibold tracking-tight text-stone-950">欢迎回来</h1>
-              <p className="text-sm leading-6 text-stone-500">输入密钥后继续使用账号管理和图片生成功能。</p>
+              <p className="text-sm leading-6 text-stone-500">使用管理员密钥登录。用户绘图请前往用户工作台。</p>
             </div>
           </div>
 

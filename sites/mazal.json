@@ -1,0 +1,16 @@
+{
+  "id": "mazal",
+  "name": "Mazal 绘图",
+  "mainOrigin": "https://mazal.lol",
+  "publicOrigin": "https://image.mazal.lol",
+  "downloadPrefix": "Mazal-Image",
+  "guideStorageKey": "mazal-studio-guide-v1",
+  "icon": "M",
+  "localEngineImageOnly": true,
+  "layout": "static",
+  "root": "/opt/chatgpt2api",
+  "webRoot": "/var/www/mazal-image-workbench",
+  "backendContainer": "mazal-image",
+  "backendService": "app",
+  "healthUrl": "http://127.0.0.1:8300/version"
+}

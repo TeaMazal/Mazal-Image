@@ -67,3 +67,5 @@ const workbench = createWorkbench({
 绘图子页面自身重新加载后会生成新 nonce，父页会重新申请票据并恢复连接；同一 nonce 的重复握手不会重复签发。`onState` 会在交接期间收到 `{ connected: false }`，成功后收到 `{ connected: true }`。刷新只重新认证和查询既有任务，不会再次提交生图。
 
 接入模块不依赖主站前端框架；具体已执行的模拟部署与浏览器验收结果见 VALIDATION.md。
+
+Sub2 主站使用 Vue 时，可参考 [站内绘图组件](../integrations/sub2-workbench/README.md)。该入口恢复上次分组后等待用户点击进入，使用独立 `/embed` 页面和单次票据交接；主站组件须在各自主站项目构建，绘图站发布脚本不会修改主站。

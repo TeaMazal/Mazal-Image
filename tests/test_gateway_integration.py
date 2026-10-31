@@ -115,6 +115,21 @@ async def request(path, token='', method='GET', payload=None, engine=False, ip='
 
 
 class GatewayIntegrationTests(unittest.TestCase):
+    def test_local_user_keys_cannot_be_minted_or_reused(self):
+        with patch.object(integration.auth_service, 'authenticate', return_value={'id': 'old-local', 'role': 'user'}):
+            self.assertIsNone(integration.local_identity('old-local-key'))
+        code, _ = asyncio.run(request('/api/auth/users', config.auth_key, 'POST', {'name': 'blocked'}))
+        self.assertEqual(code, 403)
+
+    def test_local_engine_keeps_image_only_contract(self):
+        before = len(SEEN)
+        code, body = asyncio.run(request('/v1/models', config.auth_key, engine=True))
+        self.assertEqual(code, 200)
+        self.assertEqual([item['id'] for item in body['data']], ['gpt-image-2'])
+        code, _ = asyncio.run(request('/v1/chat/completions', config.auth_key, 'POST', {'model': 'gpt-image-2'}, engine=True, forbid_body=True))
+        self.assertEqual(code, 404)
+        self.assertEqual(len(SEEN), before)
+
     def test_public_runtime_config_and_manifest_contain_no_credentials(self):
         code, script, headers = asyncio.run(request('/site-config.js', return_headers=True))
         self.assertEqual(code, 200)
@@ -165,7 +180,7 @@ class GatewayIntegrationTests(unittest.TestCase):
 
     def test_unknown_pages_and_root_exports_never_serve_legacy_home(self):
         for path in ('/', '/index', '/missing-page', '/index.txt', '/__next._full.txt',
-                     '/404.html', '/accounts/missing', '/.env', '/image/index.txt'):
+                     '/404.html', '/accounts/missing', '/.env'):
             for method in ('GET', 'HEAD'):
                 with self.subTest(path=path, method=method):
                     code, _ = asyncio.run(request(path, method=method))
@@ -178,11 +193,11 @@ class GatewayIntegrationTests(unittest.TestCase):
         with patch.object(integration.support, 'resolve_web_asset', return_value=None) as resolve:
             for path in ('accounts', 'accounts/', 'settings/index.html', 'logs/index.txt',
                          'debug/__next.debug.__PAGE__.txt', 'accounts/__next.accounts/__PAGE__.txt', 'image-manager/', 'login/',
-                         '_next/static/chunks/test.js', 'openai.svg', 'github.svg'):
+                         'image/index.txt', '_next/static/chunks/test.js', 'openai.svg', 'github.svg'):
                 with self.assertRaises(integration.HTTPException) as error:
                     asyncio.run(integration.serve_admin_asset(path))
                 self.assertEqual(error.exception.status_code, 404)
-            self.assertEqual(resolve.call_count, 11)
+            self.assertEqual(resolve.call_count, 12)
             resolve.reset_mock()
             for path in ('accounts/../../index.html', '_next/static/../../index.html', 'index.txt'):
                 with self.assertRaises(integration.HTTPException):

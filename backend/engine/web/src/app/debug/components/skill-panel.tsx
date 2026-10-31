@@ -7,17 +7,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import webConfig from "@/constants/common-env";
 import { fetchSettingsConfig } from "@/lib/api";
-import { getStoredAuthSession } from "@/store/auth";
 
 export function SkillPanel() {
   const [browserBaseUrl, setBrowserBaseUrl] = useState("");
   const [configuredBaseUrl, setConfiguredBaseUrl] = useState("");
-  const [authKey, setAuthKey] = useState("");
+  const authKey = "<管理员测试密钥：仅在受信任的本机填写>";
 
   useEffect(() => {
     setBrowserBaseUrl(window.location.origin);
     void fetchSettingsConfig().then((data) => setConfiguredBaseUrl(String(data.config.base_url || "").replace(/\/$/, ""))).catch(() => undefined);
-    void getStoredAuthSession().then((session) => setAuthKey(session?.key || ""));
   }, []);
 
   const apiBaseUrl = configuredBaseUrl || webConfig.apiUrl.replace(/\/$/, "") || browserBaseUrl;
@@ -135,8 +133,8 @@ ${skillEn}
   };
 
   const versions = [
-    { title: "中文安装指令", desc: "复制后直接发给 Codex 或 Claude，让它安装到本地。", prompt: zhPrompt, skill: skillZh },
-    { title: "English install prompt", desc: "Copy and send this to Codex or Claude to install locally.", prompt: enPrompt, skill: skillEn },
+    { title: "中文安装指令", desc: "仅供管理员本机测试。模板使用占位符，不包含当前登录密钥。", prompt: zhPrompt, skill: skillZh },
+    { title: "English install prompt", desc: "Admin local testing only. This template contains no signed-in credential.", prompt: enPrompt, skill: skillEn },
   ];
 
   return (

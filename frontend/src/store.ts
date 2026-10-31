@@ -1,6 +1,8 @@
+import { captureStudioDraft, createStudioSlice, getPersistedStudioData, getStudioConversationId, getStudioDraftImageIds, normalizeStudioData, reconcileStudioTasks, type StudioSlice } from './lib/studioConversations'
 import type { ReactNode } from 'react'
 import { create } from 'zustand'
 import { MAZAL_PROVIDER, mazalStorageName } from './lib/mazalSession'
+import { getStudioRoundTasks, getStudioRoundTotal, isStudioTaskRunning } from './lib/studioRounds'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type {
   AgentConversation,
@@ -276,7 +278,7 @@ export function getPersistedState(state: AppState) {
   if (result.settings.profiles.some((profile) => profile.provider === MAZAL_PROVIDER)) {
     result.settings = { ...result.settings, apiKey: '', profiles: result.settings.profiles.map((profile) => ({ ...profile, apiKey: '' })) }
   }
-  return result
+  return { ...result, ...getPersistedStudioData(source) }
 }
 
 async function replaceStoredAgentConversations(conversations: AgentConversation[]) {
@@ -294,6 +296,7 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
   return {
     ...currentState,
     ...plan.state,
+    ...normalizeStudioData(persistedState, plan.state.params),
     activeFavoriteCollectionId: null,
     favoritePickerTaskIds: null,
   }
@@ -301,7 +304,7 @@ function mergePersistedState(persistedState: unknown, currentState: AppState): A
 
 // ===== Store 类型 =====
 
-interface AppState {
+interface AppState extends StudioSlice {
   // 模式
   appMode: AppMode
   setAppMode: (mode: AppMode) => void
@@ -491,6 +494,7 @@ interface AppState {
 }
 
 function isImageReferencedByState(state: AppState, imageId: string) {
+  if (getStudioDraftImageIds(state).includes(imageId)) return true
   if (state.inputImages.some((img) => img.id === imageId)) return true
   if (state.galleryInputDraft?.inputImages.some((img) => img.id === imageId)) return true
   if (Object.values(state.agentInputDrafts).some((draft) => draft.inputImages.some((img) => img.id === imageId))) return true
@@ -565,6 +569,7 @@ async function deleteStoredImageIfUnreferenced(imageId: string) {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
+      ...createStudioSlice(set, get),
       // Mode
       appMode: 'gallery',
       setAppMode: (appMode) => {
@@ -950,8 +955,9 @@ export const useStore = create<AppState>()(
 
       // Tasks
       tasks: [],
-      setTasks: (tasks) => set(() => ({
+      setTasks: (tasks) => set((state) => ({
         tasks,
+        ...(state.studioConversations.length ? { studioConversations: reconcileStudioTasks(captureStudioDraft(state), tasks, state.params) } : {}),
         ...(countSuccessfulOutputImages(tasks) <= SUPPORT_PROMPT_IMAGE_THRESHOLD
           ? { supportPromptSkippedForImportedData: false }
           : {}),
@@ -1392,6 +1398,7 @@ function getTaskApiProfileName(task: TaskRecord) {
 }
 
 function isNetworkRecoverableError(err: unknown) {
+  if (err instanceof Error && err.name === 'MazalTaskError') return false
   if (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError') return true
   if (err instanceof FetchConnectError) return true
   const message = err instanceof Error ? err.message : String(err)
@@ -1670,7 +1677,7 @@ export async function initStore() {
   }
 
   // 收集所有任务引用的图片 id
-  const referencedIds = new Set<string>()
+  const referencedIds = new Set<string>(getStudioDraftImageIds(useStore.getState()))
   const state = useStore.getState()
   const persistedInputImages = state.inputImages
   const galleryInputDraft = state.galleryInputDraft
@@ -1802,6 +1809,16 @@ export async function initStore() {
         : {}),
     })
   }
+  const studioConversations = await Promise.all(useStore.getState().studioConversations.map(async (conversation) => {
+    const inputImages: InputImage[] = []
+    for (const image of conversation.draft.inputImages) {
+      const dataUrl = image.dataUrl || await ensureImageCached(image.id)
+      if (dataUrl) inputImages.push({ id: image.id, dataUrl })
+    }
+    return { ...conversation, draft: { ...conversation.draft, ...updateInputDraftImages(conversation.draft, inputImages) } }
+  }))
+  if (studioConversations.length) useStore.setState({ studioConversations })
+
 }
 
 /** 命令行直接给出的提示词和参考图：提交时不读写输入区、遮罩和复用配置状态；多条提示词按批量提交 */
@@ -1816,6 +1833,7 @@ let lastMazalSubmission = 0
 export async function submitTask(options: { allowFullMask?: boolean; useCurrentApiProfileWhenReusedMissing?: boolean; input?: SubmitInput } = {}): Promise<string[]> {
   const state = useStore.getState()
   const { settings, params, showToast, setConfirmDialog } = state
+  const studioConversationId = state.activeStudioConversationId
   if (getActiveApiProfile(settings).provider === MAZAL_PROVIDER) {
     if (!options.allowFullMask && Date.now() - lastMazalSubmission < 1000) return []
     if (state.tasks.filter((task) => task.status === 'running' || task.customRecoverable).length >= 2) {
@@ -1941,16 +1959,24 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
     : { ...normalizedParams, transparent_output: false }
   const normalizedParamPatch = getChangedParams(params, taskParams)
   if (Object.keys(normalizedParamPatch).length) {
-    useStore.getState().setParams(normalizedParamPatch)
+    if (studioConversationId && useStore.getState().activeStudioConversationId !== studioConversationId) {
+      useStore.getState().patchStudioDraft(studioConversationId, { params: taskParams })
+    } else {
+      useStore.getState().setParams(normalizedParamPatch)
+    }
   }
 
   const taskIds: string[] = []
+  const studioRoundId = studioConversationId && activeProfile.provider === MAZAL_PROVIDER ? genId() : undefined
+  const studioRoundTotal = batchPrompts.length || 1
   const startTask = async (taskPrompt: string) => {
     const transparentMeta = taskParams.transparent_output && activeProfile.transparentBackgroundMethod === 'local'
       ? createTransparentOutputMeta(taskPrompt)
       : null
     const task: TaskRecord = {
       id: genId(),
+      ...(studioConversationId ? { studioConversationId } : {}),
+      ...(studioRoundId ? { studioRoundId, studioRoundTotal, studioRoundIndex: taskIds.length } : {}),
       prompt: taskPrompt,
       params: activeProfile.provider === MAZAL_PROVIDER ? { ...taskParams, n: 1 } : taskParams,
       apiProvider: activeProfile.provider,
@@ -1990,11 +2016,22 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
   }
 
   if (!input) {
-    if (settings.clearInputAfterSubmit) {
-      useStore.getState().setPrompt('')
-      useStore.getState().clearInputImages()
+    const latest = useStore.getState()
+    if (studioConversationId) {
+      const draft = latest.activeStudioConversationId === studioConversationId
+        ? latest
+        : latest.studioConversations.find((conversation) => conversation.id === studioConversationId)?.draft
+      if (settings.clearInputAfterSubmit && draft?.prompt === prompt && draft.inputImages.map((image) => image.id).join() === inputImages.map((image) => image.id).join()) {
+        latest.patchStudioDraft(studioConversationId, { prompt: '', inputImages: [], maskDraft: null, maskEditorImageId: null })
+      }
+      if (latest.activeStudioConversationId === studioConversationId) latest.setReusedTaskApiProfile(null)
+    } else {
+      if (settings.clearInputAfterSubmit) {
+        latest.setPrompt('')
+        latest.clearInputImages()
+      }
+      latest.setReusedTaskApiProfile(null)
     }
-    useStore.getState().setReusedTaskApiProfile(null)
   }
 
   if (batchPrompts.length) {
@@ -3997,17 +4034,25 @@ async function executeTask(taskId: string) {
       : `生成完成，共 ${outputIds.length} 张图片`
     // 批量任务只在整批结束时统一提示
     if (!batchTaskIds.has(taskId) && !isTaskHiddenByPrivacyMode(task)) {
-      useStore.getState().showToast(completionMessage, failedCount > 0 ? 'error' : 'success')
+      const latest = useStore.getState()
+      const conversation = task.studioConversationId && task.studioConversationId !== latest.activeStudioConversationId
+        ? latest.studioConversations.find((item) => item.id === task.studioConversationId)
+        : null
+      latest.showToast(conversation ? `「${conversation.title}」${completionMessage}` : completionMessage, failedCount > 0 ? 'error' : 'success')
       if (!isAgentTask(task)) showTaskCompletionNotification('图像生成完成', `${completionMessage}。`)
     }
-    const currentMask = useStore.getState().maskDraft
+    const studioState = useStore.getState()
+    const currentMask = task.studioConversationId && studioState.activeStudioConversationId !== task.studioConversationId
+      ? studioState.studioConversations.find((conversation) => conversation.id === task.studioConversationId)?.draft.maskDraft
+      : studioState.maskDraft
     if (
       maskDataUrl &&
       currentMask &&
       currentMask.targetImageId === task.maskTargetImageId &&
       currentMask.maskDataUrl === maskDataUrl
     ) {
-      useStore.getState().clearMaskDraft()
+      if (task.studioConversationId) studioState.patchStudioDraft(task.studioConversationId, { maskDraft: null, maskEditorImageId: null })
+      else studioState.clearMaskDraft()
     }
   } catch (err) {
     if (taskExecutions.get(taskId) !== execution) return
@@ -4057,7 +4102,7 @@ async function executeTask(taskId: string) {
         customRecoverable: false,
       })
       // 批量任务不自动打开失败详情，避免连续弹窗打断
-      if (!batchTaskIds.has(taskId) && !isTaskHiddenByPrivacyMode(task)) useStore.getState().setDetailTaskId(taskId)
+      if (!task.studioConversationId && !useStore.getState().studioConversations.length && !batchTaskIds.has(taskId) && !isTaskHiddenByPrivacyMode(task)) useStore.getState().setDetailTaskId(taskId)
       showTaskFailureNotification(task)
     }
   } finally {
@@ -4170,7 +4215,7 @@ export async function deleteFavoriteCollection(collectionId: string, deleteTasks
 }
 
 /** 按重试方式新建任务或覆盖原任务；Agent 对话中的任务始终新建 */
-export async function retryTask(task: TaskRecord) {
+export async function retryTask(task: TaskRecord, options: { preserveOriginal?: boolean; studioRound?: { id: string; total: number; index: number } } = {}) {
   const { settings, tasks } = useStore.getState()
   const source = tasks.find((item) => item.id === task.id)
   if (!source || source.status === 'running' || source.falRecoverable || source.customRecoverable) return
@@ -4183,13 +4228,15 @@ export async function retryTask(task: TaskRecord) {
   const transparentMeta = taskParams.transparent_output && activeProfile.transparentBackgroundMethod === 'local'
     ? createTransparentOutputMeta(source.prompt.trim())
     : null
-  const overwrite = !isAgentTask(source) && (
+  const overwrite = !options.preserveOriginal && !isAgentTask(source) && (
     settings.retryMode === 'overwriteAll' || (settings.retryMode === 'overwriteFailed' && source.status === 'error')
   )
   const taskId = overwrite ? source.id : genId()
   const startedAt = Date.now()
   const newTask: TaskRecord = {
     ...(overwrite ? source : {}),
+    ...(useStore.getState().studioConversations.length ? { studioConversationId: getStudioConversationId(source) } : {}),
+    ...(options.studioRound ? { studioRoundId: options.studioRound.id, studioRoundTotal: options.studioRound.total, studioRoundIndex: options.studioRound.index } : {}),
     id: taskId,
     prompt: source.prompt,
     params: taskParams,
@@ -4247,10 +4294,32 @@ export async function retryTask(task: TaskRecord) {
   }
 
   executeTask(taskId)
+  return taskId
+}
+
+export async function retryStudioRound(task: TaskRecord) {
+  const sources = getStudioRoundTasks(useStore.getState().tasks, task)
+  if (!sources.length || useStore.getState().batchProgress || sources.some(isStudioTaskRunning)) return
+  if (!task.studioRoundId) return retryTask(sources[0], { preserveOriginal: true })
+  const total = getStudioRoundTotal(sources)
+  const id = genId()
+  const start = async (index: string) => {
+    const taskId = await retryTask(sources[Number(index)] ?? sources[0], { preserveOriginal: true, studioRound: { id, total, index: Number(index) } })
+    if (!taskId) throw new Error('本轮任务已变化，请重新选择')
+    if (total > 1) batchTaskIds.add(taskId)
+    return taskId
+  }
+  if (total > 1) await runBatchPrompts(beginBatch(total), Array.from({ length: total }, (_, index) => String(index)), 1, start)
+  else await start('0')
 }
 
 /** 复用配置 */
 export async function reuseConfig(task: TaskRecord) {
+  if (useStore.getState().studioConversations.length) {
+    const { prepareStudioTask } = await import('./lib/studioActions')
+    await prepareStudioTask(task, 'reuse')
+    return
+  }
   const { settings, setPrompt, setParams, setInputImages, setMaskDraft, clearMaskDraft, showToast, setConfirmDialog, setReusedTaskApiProfile } = useStore.getState()
   const normalizedSettings = normalizeSettings(settings)
   const currentProfile = getActiveApiProfile(settings)
@@ -4327,6 +4396,11 @@ export async function reuseConfig(task: TaskRecord) {
 
 /** 编辑输出：将输出图加入输入 */
 export async function editOutputs(task: TaskRecord) {
+  if (useStore.getState().studioConversations.length) {
+    const { prepareStudioTask } = await import('./lib/studioActions')
+    await prepareStudioTask(task, 'edit')
+    return
+  }
   const { inputImages, addInputImage, showToast } = useStore.getState()
   if (!task.outputImages?.length) return
 
@@ -4609,6 +4683,11 @@ export async function clearData(options: ClearOptions = { clearConfig: true, cle
     clearImageCaches()
     setTasks([])
     useStore.setState({
+      studioConversations: [],
+      activeStudioConversationId: null,
+      studioView: 'create',
+      prompt: '',
+      galleryInputDraft: null,
       agentConversations: [],
       activeAgentConversationId: null,
       supportPromptOpen: false,
@@ -4617,6 +4696,7 @@ export async function clearData(options: ClearOptions = { clearConfig: true, cle
     })
     clearInputImages()
     clearMaskDraft()
+    if (useStore.getState().settings.profiles.some((profile) => profile.provider === MAZAL_PROVIDER)) useStore.getState().initializeStudioConversations()
   }
 
   if (options.clearConfig) {
@@ -4731,6 +4811,7 @@ export async function exportData(options: ExportOptions = { exportConfig: true, 
       favoriteCollections,
       defaultFavoriteCollectionId,
       agentConversations: options.exportTasks ? getPersistableAgentConversations(agentConversations) : [],
+      studioConversations: options.exportTasks ? getPersistedStudioData(state).studioConversations : [],
     }
     // 进度回调中检查取消，逐张读取时也能及时中断
     const imageSizes = await getExportImageSizes(imageIds, (done) => {
@@ -4928,6 +5009,19 @@ export async function importData(input: File | File[], options: ImportOptions = 
 
       const tasks = await getAllTasks()
       const state = useStore.getState()
+      const mergedStudio = new Map(captureStudioDraft(state).map((conversation) => [conversation.id, conversation]))
+      for (const part of selected) {
+        for (const conversation of normalizeStudioData(part.manifest, state.params).studioConversations) {
+          if (mergedStudio.has(conversation.id)) continue
+          const inputImages: InputImage[] = []
+          for (const image of conversation.draft.inputImages) {
+            const dataUrl = await ensureImageCached(image.id)
+            if (dataUrl) inputImages.push({ id: image.id, dataUrl })
+          }
+          mergedStudio.set(conversation.id, { ...conversation, draft: { ...conversation.draft, ...updateInputDraftImages(conversation.draft, inputImages) } })
+        }
+      }
+      if (state.studioConversations.length || mergedStudio.size) useStore.setState({ studioConversations: reconcileStudioTasks([...mergedStudio.values()], tasks, state.params) })
       const importedFavoriteCollections = selected.flatMap((part) => part.manifest.favoriteCollections ?? [])
       const mergedFavorites = mergeFavoriteCollections(state.favoriteCollections, importedFavoriteCollections)
       const favoriteCollections = mergedFavorites.collections
@@ -5009,10 +5103,11 @@ export async function importData(input: File | File[], options: ImportOptions = 
 }
 
 /** 添加图片到输入（文件上传） */
-export async function addImageFromFile(file: File): Promise<void> {
+export async function addImageFromFile(file: File, studioConversationId = useStore.getState().activeStudioConversationId): Promise<void> {
   const image = await createInputImageFromFile(file)
   if (!image) return
-  useStore.getState().addInputImage(image)
+  if (studioConversationId) useStore.getState().addStudioReference(studioConversationId, image)
+  else useStore.getState().addInputImage(image)
 }
 
 export async function createInputImageFromFile(file: File): Promise<InputImage | null> {
@@ -5026,7 +5121,7 @@ export async function createInputImageFromFile(file: File): Promise<InputImage |
 }
 
 /** 添加图片到输入（右键菜单、添加链接）—— 支持 data/blob/http URL */
-export async function addImageFromUrl(src: string): Promise<void> {
+export async function addImageFromUrl(src: string, studioConversationId = useStore.getState().activeStudioConversationId): Promise<void> {
   const res = await apiFetch(src)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const blob = await res.blob()
@@ -5036,5 +5131,6 @@ export async function addImageFromUrl(src: string): Promise<void> {
   cacheImage(id, dataUrl)
   // 内容相同的图片共用一个 id，记录最近一次添加的链接
   if (isHttpUrl(src)) useStore.setState((s) => ({ imageSourceUrls: { ...s.imageSourceUrls, [id]: src } }))
-  useStore.getState().addInputImage({ id, dataUrl })
+  if (studioConversationId) useStore.getState().addStudioReference(studioConversationId, { id, dataUrl })
+  else useStore.getState().addInputImage({ id, dataUrl })
 }

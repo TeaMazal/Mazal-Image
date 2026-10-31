@@ -1362,7 +1362,7 @@ def _generate_single_image(
                         )
                     emitted_for_token = True
                     returned_message = output.kind == "message"
-                    returned_result = returned_result or output.kind == "result"
+                    returned_result = returned_result or (output.kind == "result" and bool(output.data))
                     outputs.append(output)
             except Exception as exc:
                 # 异常路径（内容政策拒绝、轮询超时等）会话 ID 只挂在异常上
@@ -1370,6 +1370,11 @@ def _generate_single_image(
                 raise
             finally:
                 _remove_image_conversation_later(backend, last_conversation_id, success=returned_result)
+            if returned_result:
+                # 每个工作项只交付一张最终图片，流式与普通响应共用相同的计费数量。
+                final_result = next(output for output in reversed(outputs) if output.kind == "result" and output.data)
+                final_result.data = final_result.data[-1:]
+                outputs = [output for output in outputs if output.kind != "result"] + [final_result]
             if returned_message:
                 account_service.mark_image_result(token, False)
                 return outputs

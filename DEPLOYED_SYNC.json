@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-31",
+  "site": "https://image.mazal.lol",
+  "features": [
+    "studio-conversations",
+    "gallery-favorites",
+    "task-recovery",
+    "customer-pricing",
+    "scroll-position",
+    "admin-api-fixes"
+  ],
+  "shared_release": "20261031-r2",
+  "shared_sites": ["https://image.mazal.lol"],
+  "souhub_status": "restored-pre-shared-round-tools-and-action-icons; latest-features-merged-locally",
+  "ui_verification": "independent-login-confirmed; mazal-embedded-click-entry-and-390x844-confirmed",
+  "paid_generation_tested": false,
+  "maintenance_document": "docs/TWO_SITE_RELEASES.md"
+}

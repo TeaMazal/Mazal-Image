@@ -20,6 +20,7 @@ server {
 
     location = /healthz { access_log off; default_type text/plain; return 200 "ok\n"; }
     location = / { add_header Cache-Control no-store; include /etc/nginx/snippets/security-headers.conf; try_files /index.html =404; }
+    location = /embed { add_header Cache-Control no-store; include /etc/nginx/snippets/security-headers.conf; try_files /embed.html /index.html =404; }
     location = /index.html { add_header Cache-Control no-store; include /etc/nginx/snippets/security-headers.conf; try_files $uri =404; }
     location = /site-config.js { proxy_pass http://backend:8080; }
     location = /manifest.webmanifest { proxy_pass http://backend:8080; }

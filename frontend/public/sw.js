@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mazal-image-v0.1.2'
+const CACHE_NAME = 'mazal-image-v0.1.2-studio-20261031'
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './pwa-icon.svg', './pwa-maskable-icon.svg', './color-mode.js']
 const APP_SHELL_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.registration.scope).href))
 const ASSETS_PATH = new URL('./assets/', self.registration.scope).pathname
@@ -28,7 +28,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return
 
   // 只缓存顶层页面；公告卡片中的 iframe 也是导航请求，不能写进 index.html 的缓存
-  if (!['/', '/image', '/image/', '/workbench', '/workbench/'].includes(url.pathname) && !APP_SHELL_URLS.has(url.href) && !url.pathname.startsWith(ASSETS_PATH)) return
+  if (!['/', '/workbench', '/workbench/'].includes(url.pathname) && !APP_SHELL_URLS.has(url.href) && !url.pathname.startsWith(ASSETS_PATH)) return
 
   if (request.mode === 'navigate' && request.destination === 'document') {
     event.respondWith(
