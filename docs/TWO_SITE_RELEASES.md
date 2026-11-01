@@ -14,6 +14,8 @@ Souhub 于 2026-10-31 07:17 UTC 增量上线图片协议扩展，增加 `backend
 
 Souhub 后续上线了无限画布及内部 HTTPS 回源修复。源码、工作台覆盖文件与站点运维说明已同步至 [integrations/canvas](../integrations/canvas/README.md)，审查与真实生图验收见 [画布源码同步记录](CANVAS_SOURCE_SYNC.md)。该集成没有自动加入默认安装器或新加坡 Mazal；不能用原有只包含 frontend 的共享包覆盖 Souhub 当前画布网关。主站容器替换前必须恢复其内部绘图网络连接。
 
+2026-11-01 修复新建空对话时标题被顶部导航遮挡。空对话保持首屏，开始第一轮后恢复跟随；已有对话最新轮次定位、画廊定点返回和手动翻阅行为保留。Souhub 仅更新 web，当前镜像为 `sha256:157e3ebd6c332aabc2c6834bdcc5f8679c3172e8bd90ba69c6d6e774c319f4b5`，操作记录为 `operations/title-position-current.json`，对应目录保存前版源码和 `rollback.py`。发布前核对 286 个线上源码文件，生产组合版 943 项测试、共享前端 944 项测试通过；两者均构建通过。公网前端使用隔离的模拟身份与接口完成桌面、矮窗口、手机尺寸的连续新建及长输入检查，没有发起付费生图；标题距导航分别为 26px、26px、23.25px。画布文件、内部 HTTPS 与主站/账号池/画布容器保持原有配置。未向 Mazal 部署。
+
 2026-10-31 后续模板中心、输入区及 API 帮助也已合回本仓库，见 [最新源码同步](SOURCE_SYNC_20261031.md)。Souhub 当前 web 为 `sha256:b8743095b80415c616edda5b9a1df2dc4b6b695aef0cc12f94573f8447252111`，backend 为 `sha256:962afa5ea6a6dec4cce07fa83a4f44b1ebf3c7160bfa82b434c40a5fda770c0c`。这里只推送源码，尚未将本次合成版部署到任一站；Mazal 的历史共享版不是 Souhub 的最新基准。
 
 1. 在 frontend/ 执行 npm ci、npm run build、npm test。后端有改动时，另外运行 tests/test_gateway_integration.py、test_image_protocols.py、test_prompt_library.py、test_site_config.py、test_maintenance.py 和 test_release.py，并构建管理前端；主站计费集成有改动时在主站项目单独运行对应 Go 测试。

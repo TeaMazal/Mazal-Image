@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { getPageScroller } from '../lib/pageScroll'
 
 export function useStudioThreadScroll(conversationId: string | null, focusedTaskId: string | null, lastTaskId?: string) {
+  const hasTasks = Boolean(lastTaskId)
   const threadRef = useRef<HTMLElement>(null)
   const following = useRef(true)
   const anchor = useRef<string | null>(null)
@@ -14,7 +15,7 @@ export function useStudioThreadScroll(conversationId: string | null, focusedTask
     const viewportHeight = () => 'innerHeight' in scroller ? scroller.innerHeight : scroller.clientHeight
     const scrollTop = () => 'scrollY' in scroller ? scroller.scrollY : scroller.scrollTop
     const maximum = () => Math.max(0, page.scrollHeight - viewportHeight())
-    const nearLatest = () => maximum() - scrollTop() <= 80
+    const nearLatest = () => hasTasks ? maximum() - scrollTop() <= 80 : scrollTop() <= 1
     let frame = 0
     anchor.current = focusedTaskId
     following.current = !focusedTaskId
@@ -22,9 +23,9 @@ export function useStudioThreadScroll(conversationId: string | null, focusedTask
       if (anchor.current) {
         document.getElementById(`studio-turn-${anchor.current}`)?.scrollIntoView({ block: 'start', behavior: 'auto' })
       } else if (following.current) {
-        scroller.scrollTo({ top: maximum(), behavior: 'auto' })
+        scroller.scrollTo({ top: hasTasks ? maximum() : 0, behavior: 'auto' })
       }
-      setShowJump(!nearLatest())
+      setShowJump(hasTasks && !nearLatest())
     }
     const schedule = () => {
       window.cancelAnimationFrame(frame)
@@ -34,7 +35,7 @@ export function useStudioThreadScroll(conversationId: string | null, focusedTask
     const onScroll = () => {
       const near = nearLatest()
       if (!anchor.current) following.current = near
-      setShowJump(!near)
+      setShowJump(hasTasks && !near)
     }
     const stopFollowing = () => { anchor.current = null; following.current = false }
     const onKeyDown = (event: Event) => {
@@ -65,7 +66,7 @@ export function useStudioThreadScroll(conversationId: string | null, focusedTask
       window.removeEventListener('resize', schedule)
       align.current = () => {}
     }
-  }, [conversationId])
+  }, [conversationId, hasTasks])
 
   useLayoutEffect(() => {
     if (focusedTaskId) {

@@ -14,7 +14,7 @@ let height: number
 let frames: Map<number, FrameRequestCallback>
 let resize: () => void
 let frameId: number
-let props: { conversation: string; focused: string | null; last: string }
+let props: { conversation: string; focused: string | null; last?: string }
 const originalScrollIntoView = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView')
 
 function Thread() {
@@ -61,6 +61,30 @@ afterEach(() => {
 })
 
 describe('studio conversation scroll', () => {
+  it('keeps a new empty conversation at the top through composer and welcome layout changes', () => {
+    render()
+    props = { conversation: 'empty', focused: null }
+    render()
+    expect(container.scrollTop).toBe(0)
+    resizeContent(3400)
+    expect(container.scrollTop).toBe(0)
+    expect(container.querySelector('button')).toBeNull()
+    props = { ...props, last: 'first-round' }
+    render()
+    expect(container.scrollTop).toBe(2600)
+    resizeContent(3800)
+    expect(container.scrollTop).toBe(3000)
+  })
+
+  it('allows manual scrolling in an empty conversation without showing a latest-round action', () => {
+    props = { conversation: 'empty', focused: null }
+    render()
+    act(() => { container.dispatchEvent(new WheelEvent('wheel')); container.scrollTop = 200; container.dispatchEvent(new Event('scroll')) })
+    resizeContent(3400)
+    expect(container.scrollTop).toBe(200)
+    expect(container.querySelector('button')).toBeNull()
+  })
+
   it('opens each conversation at its latest round and follows late layout changes', () => {
     render()
     expect(container.scrollTop).toBe(2200)
@@ -126,6 +150,9 @@ describe('studio conversation scroll', () => {
     vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
     render()
     expect(window.scrollTo).toHaveBeenCalledWith({ top: height - window.innerHeight, behavior: 'auto' })
+    props = { conversation: 'empty', focused: null }
+    render()
+    expect(window.scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'auto' })
     if (previous) Object.defineProperty(document.documentElement, 'scrollHeight', previous)
     else Reflect.deleteProperty(document.documentElement, 'scrollHeight')
   })
