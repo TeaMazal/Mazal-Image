@@ -18,6 +18,12 @@ Mazal Image 是衍生整合项目，新增整合代码的授权见根 LICENSE；
 - 上游 README 原文在 `backend/engine/UPSTREAM.md`，其中包含非商业等用途限制表述。此分发保留该表述；如需据此判断具体使用权限，应核对所用版本的授权，不应将根 LICENSE 当作对所有第三方组件使用范围的额外保证。
 - Python 源码来自实际运行基线的程序目录，未收集生产配置或数据。管理页面从对应版本的公开源码构建；通用版修改了数据路径和构建资源限制。
 
+## 可选无限画布
+
+- 上游：https://github.com/basketikun/infinite-canvas，基线提交记录在 `integrations/canvas/UPSTREAM.json`。
+- 上游 MIT 许可保存在 `integrations/canvas/LICENSE`；Souhub 的项目同步、私有素材、任务与计费接入有修改。画布依赖由 `integrations/canvas/web/package-lock.json` 锁定。
+- 该目录为独立的可选站点集成，不改变原有工作区和账号池组件的许可。
+
 ## 依赖
 
 灵感模板的提示词和示例封面独立采用 CC BY 4.0，原始作者、案例链接及修改说明见 `backend/template_data/library.json`、`backend/template_data/attribution/` 和该目录的 README；许可全文见 `backend/template_data/LICENSE-CC-BY-4.0.txt`。根目录的软件许可不替代这部分素材的署名要求。

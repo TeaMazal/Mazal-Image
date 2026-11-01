@@ -10,7 +10,13 @@ describe('studio task feedback', () => {
     ['insufficient quota', '检查额度与权限'],
     ['429 rate_limit_exceeded', '稍等片刻再试'],
     ['content_policy_violation', '调整提示词或参考图'],
-    ['upstream connection timed out', '先检查任务状态'],
+    ['upstream connection timed out', '绘图服务连接超时'],
+    ['Upstream request failed', '绘图服务连接异常'],
+    ['HTTP 502 Bad Gateway', '绘图服务连接异常'],
+    ['HTTP 503 Service Unavailable', '绘图服务连接异常'],
+    ['HTTP 504 Gateway Timeout', '绘图服务连接超时'],
+    ['dial tcp 172.64.80.1:443: i/o timeout', '绘图服务连接超时'],
+    ['Failed to fetch', '先检查任务状态'],
     ['无法读取参考图', '检查本轮输入后重试'],
   ])('provides actionable advice for %s', (error, title) => {
     expect(getStudioFailureAdvice(error).title).toBe(title)

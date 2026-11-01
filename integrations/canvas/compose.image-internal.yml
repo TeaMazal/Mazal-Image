@@ -1,0 +1,12 @@
+# Souhub 站点示例；与 integration/compose.canvas.yml 及原 compose 合并使用。
+services:
+  web:
+    volumes:
+      - ${CANVAS_TLS_DIR:?Set directory containing img.souhub.top.crt and key}:/etc/nginx/image-tls:ro
+    networks:
+      image_bridge:
+        aliases: [img.souhub.top]
+networks:
+  image_bridge:
+    external: true
+    name: souhub_image_bridge

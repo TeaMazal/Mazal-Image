@@ -27,6 +27,7 @@ files = []
 findings = []
 for path in sorted(root.rglob('*')):
     relative = path.relative_to(root)
+    if relative.parts[:3] in {('integrations', 'canvas', 'workbench'), ('integrations', 'canvas', 'canvas-state')}: continue
     if any(part in skip for part in relative.parts) or path.is_dir(): continue
     if path.is_symlink(): raise SystemExit('Source symlinks are not allowed: ' + str(relative))
     if relative.parts[0] not in directories and str(relative) not in root_files: continue

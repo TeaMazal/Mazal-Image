@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch the existing image TLS certificate
+
+[Path]
+PathChanged=/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/img.souhub.top
+PathChanged=/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/img.souhub.top/img.souhub.top.crt
+PathChanged=/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/img.souhub.top/img.souhub.top.key
+Unit=souhub-image-tls-reload.service
+
+[Install]
+WantedBy=multi-user.target

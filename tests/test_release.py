@@ -1,5 +1,9 @@
 import importlib.util
 import json
+import shutil
+import subprocess
+import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -19,6 +23,21 @@ deploy = load('deploy_site')
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_source_archive_omits_canvas_runtime_and_generated_workbench(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            script = root / 'scripts/source_archive.py'
+            script.parent.mkdir()
+            shutil.copy2(ROOT / 'scripts/source_archive.py', script)
+            for name in ['web/src/app.ts', 'workbench/src/private.ts', 'canvas-state/canvas.sqlite3', 'canvas-state/backups/snapshot.json']:
+                path = root / 'integrations/canvas' / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('fixture', encoding='utf-8')
+            archive = root / 'source.tar.gz'
+            subprocess.run([sys.executable, str(script), '--output', str(archive)], check=True, capture_output=True)
+            with tarfile.open(archive) as source:
+                self.assertEqual(set(source.getnames()), {'scripts/source_archive.py', 'integrations/canvas/web/src/app.ts'})
+
     def test_backend_upgrade_adds_template_and_protocol_routes_without_losing_site_settings(self):
         config = (ROOT / 'deploy/nginx.conf.template').read_text(encoding='utf-8')
         old = config.replace('api|v1|v1beta|', 'api|v1|').replace('files|image|', 'files|').replace('image-manager|templates|', 'image-manager|')

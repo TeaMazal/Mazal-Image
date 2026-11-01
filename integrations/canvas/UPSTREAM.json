@@ -1,0 +1,12 @@
+{
+  "upstream": "https://github.com/basketikun/infinite-canvas",
+  "commit": "9cd3deacbcc598361807afc16c059a80dd18b6f9",
+  "license": "MIT",
+  "integration": "Souhub private projects, assets, generation tasks and Sub2 billing",
+  "layout": {
+    "web": "web/",
+    "service": "integration/app.py",
+    "workbench_overrides": "workbench-overrides/",
+    "shared_workbench": "../../frontend/"
+  }
+}

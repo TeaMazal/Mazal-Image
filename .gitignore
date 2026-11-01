@@ -23,3 +23,5 @@ __pycache__/
 frontend/dev-proxy.config.json
 frontend/.wrangler/
 frontend/src-tauri/gen/
+integrations/canvas/workbench/
+integrations/canvas/canvas-state/

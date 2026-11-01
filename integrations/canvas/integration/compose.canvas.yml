@@ -1,0 +1,46 @@
+services:
+  web:
+    image: mazal-image-web:latest
+    build:
+      context: ./canvas/release
+      dockerfile: integration/Dockerfile.web
+    depends_on:
+      canvas: {condition: service_healthy}
+  canvas:
+    image: souhub-canvas:20261031
+    build:
+      context: ./canvas/release
+      dockerfile: integration/Dockerfile
+    restart: unless-stopped
+    init: true
+    user: "10001:10001"
+    read_only: true
+    env_file: ./canvas/canvas.env
+    environment:
+      CANVAS_ENGINE: http://backend:8080
+      CANVAS_DATA: /canvas-state
+      CANVAS_TASK_FILE: /engine-state/image_tasks.json
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./canvas-state:/canvas-state
+      - ./state/data:/engine-state:ro
+    tmpfs: ["/tmp:size=134217728,mode=1777"]
+    networks: [internal, canvas_db]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 1.0
+    mem_limit: 512m
+    pids_limit: 96
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/healthz', timeout=4).read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+networks:
+  canvas_db:
+    external: true
+    name: sub2api_sub2api-network

@@ -1,0 +1,8 @@
+[Unit]
+Description=Reload image gateway after its TLS certificate changes
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker exec mazal-image-web-1 nginx -t
+ExecStart=/usr/bin/docker exec mazal-image-web-1 nginx -s reload

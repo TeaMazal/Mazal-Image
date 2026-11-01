@@ -1,0 +1,6 @@
+FROM mazal-image-canvas-web-base:20261031
+COPY workbench/dist/ /usr/share/nginx/html/
+COPY web/dist/ /usr/share/nginx/html/canvas/
+COPY LICENSE /usr/share/nginx/html/licenses/infinite-canvas-LICENSE.txt
+COPY site-deploy/deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY site-deploy/deploy/image-internal.conf.template /etc/nginx/templates/image-internal.conf.template
