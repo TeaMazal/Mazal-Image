@@ -348,8 +348,6 @@ async def create_job(job_id:str,request:Request):
     with LOCK,contextlib.closing(db()) as c,c:
         if c.execute('SELECT 1 FROM jobs WHERE owner=? AND id=?',(identity['owner'],job_id)).fetchone():
             row=c.execute('SELECT * FROM jobs WHERE owner=? AND id=?',(identity['owner'],job_id)).fetchone();return jobs_public(row)
-        active=c.execute("SELECT COUNT(*) FROM jobs WHERE owner=? AND status IN ('submitting','queued','running','uncertain')",(identity['owner'],)).fetchone()[0]
-        if active>=2:raise HTTPException(429,'你已有两个活动任务，请等待完成后再提交')
         c.execute('INSERT INTO jobs VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(identity['owner'],job_id,identity['engine_owner'],valid_id(body.get('project_id','unassigned')),valid_id(body.get('node_id','unassigned')),valid_id(body.get('image_id','unassigned')),'submitting',prompt,json.dumps(params),'','',time.time(),time.time(),identity['key_id']))
     payload={'client_task_id':job_id,'prompt':prompt,**params}
     if blobs:

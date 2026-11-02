@@ -12,6 +12,8 @@ Souhub 于 2026-10-31 07:17 UTC 增量上线图片协议扩展，增加 `backend
 
 ## 发布
 
+2026-11-02 Souhub 已启用共享服务器资源模式，更新工作台、画布与网关并发行为，并解除三个绘图容器的 CPU、内存和进程数配额。当前镜像、验收与回退入口见 [共享资源发布记录](SHARED_RESOURCES_20261102.md)，操作指针为 `operations/shared-resources-current.json`。本轮保留此前模板、协议、内部 HTTPS 和标题定位功能；主站与维护服务未重启，未向 Mazal 部署。
+
 Souhub 后续上线了无限画布及内部 HTTPS 回源修复。源码、工作台覆盖文件与站点运维说明已同步至 [integrations/canvas](../integrations/canvas/README.md)，审查与真实生图验收见 [画布源码同步记录](CANVAS_SOURCE_SYNC.md)。该集成没有自动加入默认安装器或新加坡 Mazal；不能用原有只包含 frontend 的共享包覆盖 Souhub 当前画布网关。主站容器替换前必须恢复其内部绘图网络连接。
 
 2026-11-01 修复新建空对话时标题被顶部导航遮挡。空对话保持首屏，开始第一轮后恢复跟随；已有对话最新轮次定位、画廊定点返回和手动翻阅行为保留。Souhub 仅更新 web，当前镜像为 `sha256:157e3ebd6c332aabc2c6834bdcc5f8679c3172e8bd90ba69c6d6e774c319f4b5`，操作记录为 `operations/title-position-current.json`，对应目录保存前版源码和 `rollback.py`。发布前核对 286 个线上源码文件，生产组合版 943 项测试、共享前端 944 项测试通过；两者均构建通过。公网前端使用隔离的模拟身份与接口完成桌面、矮窗口、手机尺寸的连续新建及长输入检查，没有发起付费生图；标题距导航分别为 26px、26px、23.25px。画布文件、内部 HTTPS 与主站/账号池/画布容器保持原有配置。未向 Mazal 部署。

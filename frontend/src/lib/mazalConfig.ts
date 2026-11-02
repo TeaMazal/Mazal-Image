@@ -36,9 +36,8 @@ export function createMazalSettings(settings: AppSettings): AppSettings {
     uiFont: 'system',
     monoFont: 'system',
     retryMode: 'new',
-    batchPromptMode: 'queue',
-    batchPromptConcurrencyLimited: true,
-    batchPromptConcurrency: 1,
+    batchPromptMode: 'concurrent',
+    batchPromptConcurrencyLimited: false,
     agentWebSearch: false,
   })
 }

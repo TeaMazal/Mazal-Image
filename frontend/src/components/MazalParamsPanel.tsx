@@ -23,7 +23,7 @@ export default function MazalParamsPanel({ params, setParams, displaySize, onOpe
         <div className="grid grid-cols-4 gap-2" role="group" aria-label="生成张数选项">
           {Array.from({ length: MAX_MAZAL_OUTPUT_IMAGES }, (_, index) => index + 1).map((count) => <button key={count} type="button" aria-pressed={params.n === count} onClick={() => { setParams({ n: count }); close() }} className={`rounded-lg py-2.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${params.n === count ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.06] dark:text-gray-300 dark:hover:bg-white/[0.1]'}`}>{count} 张</button>)}
         </div>
-        <p className="text-xs leading-5 text-gray-500">多张图片按顺序生成，逐张计费。</p>
+        <p className="text-xs leading-5 text-gray-500">多张图片同时提交，逐张计费，结果陆续显示。</p>
       </>}
     </ParamPopoverChip>
     <ParamPopoverChip label="更多设置" summary={params.transparent_output ? '透明背景' : undefined} active={params.transparent_output}>
@@ -34,7 +34,7 @@ export default function MazalParamsPanel({ params, setParams, displaySize, onOpe
       <div className="grid grid-cols-4 gap-2" role="group" aria-label="生成质量">
         {([{ value: 'auto', label: '自动' }, { value: 'low', label: '低' }, { value: 'medium', label: '中' }, { value: 'high', label: '高' }] as const).map((quality) => <button key={quality.value} type="button" aria-pressed={params.quality === quality.value} onClick={() => setParams({ quality: quality.value })} className={`rounded-lg py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${params.quality === quality.value ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.06] dark:text-gray-300 dark:hover:bg-white/[0.1]'}`}>{quality.label}</button>)}
       </div>
-      <p className="text-xs text-gray-500 leading-5">多张图片按顺序生成，逐张计费。输出 PNG；尺寸与质量作为生成要求，实际结果以模型返回为准。</p>
+      <p className="text-xs text-gray-500 leading-5">多张图片同时提交，逐张计费，结果陆续显示。输出 PNG；尺寸与质量作为生成要求，实际结果以模型返回为准。</p>
       {onClearPrompt && <button type="button" className="w-full border-t border-gray-200 pt-3 text-left text-xs text-gray-500 dark:border-white/10 dark:text-gray-400" onClick={() => { onClearPrompt(); close() }}>清空提示词文字</button>}
       </>}
     </ParamPopoverChip>

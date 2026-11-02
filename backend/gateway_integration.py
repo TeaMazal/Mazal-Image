@@ -5,6 +5,7 @@ tasks call Sub2API's real image gateway, so its billing cannot be bypassed.
 """
 import asyncio
 import contextvars
+from contextlib import nullcontext
 import hashlib
 import hmac
 import json
@@ -28,6 +29,7 @@ from services.config import config
 from utils import helper as image_helper
 
 CONTEXT = contextvars.ContextVar('mazal_gateway_context', default={})
+SHARED_SERVER_RESOURCES = os.environ.get('MI_SHARED_SERVER_RESOURCES', '').lower() in ('1', 'true', 'yes')
 SLOTS = threading.BoundedSemaphore(2)
 PENDING_BYTES = {}
 PROXY_SLOTS = threading.BoundedSemaphore(4)
@@ -134,7 +136,7 @@ def customer_balance(payload):
 async def proxy_gateway(scope, receive, send, token):
     if not token:
         return await JSONResponse({'error': {'message': '请提供有效的 API 密钥'}}, status_code=401)(scope, receive, send)
-    if not PROXY_SLOTS.acquire(blocking=False):
+    if not SHARED_SERVER_RESOURCES and not PROXY_SLOTS.acquire(blocking=False):
         return await JSONResponse({'error': {'message': '接口繁忙，请稍后重试'}}, status_code=429,
             headers={'Retry-After': '3'})(scope, receive, send)
     try:
@@ -146,7 +148,8 @@ async def proxy_gateway(scope, receive, send, token):
                 status_code=error.status_code)(scope, receive, send)
         return await proxy_validated_gateway(scope, receive, send, token)
     finally:
-        PROXY_SLOTS.release()
+        if not SHARED_SERVER_RESOURCES:
+            PROXY_SLOTS.release()
 
 
 async def proxy_validated_gateway(scope, receive, send, token):
@@ -304,11 +307,11 @@ def submit(self, identity, *, client_task_id, mode, payload):
                 raise HTTPException(400, detail={'error': 'size 必须为 auto 或 宽x高，例如 1024x1024'})
             existing = f"{identity['id']}:{str(client_task_id).strip()}"
             active = sum(t.get('status') in ('queued', 'running') for t in self._tasks.values())
-            if existing not in self._tasks and active >= 32:
+            if not SHARED_SERVER_RESOURCES and existing not in self._tasks and active >= 32:
                 raise HTTPException(429, detail={'error': '绘图任务繁忙，请稍后重试'})
             own_active = sum(t.get('owner_id') == identity['id'] and
                              t.get('status') in ('queued', 'running') for t in self._tasks.values())
-            if existing not in self._tasks and own_active >= 2:
+            if not SHARED_SERVER_RESOURCES and existing not in self._tasks and own_active >= 2:
                 raise HTTPException(429, detail={'error': '你已有两个任务正在处理，请等待完成后再提交'})
             input_bytes = sum(len(content) for name in ('images', 'mask')
                               for content, *_ in payload.get(name) or [])
@@ -316,7 +319,7 @@ def submit(self, identity, *, client_task_id, mode, payload):
                 raise HTTPException(413, detail={'error': '参考图和遮罩合计不能超过 24 MB'})
             reservation = (id(self), existing)
             if existing not in self._tasks:
-                if sum(PENDING_BYTES.values()) + input_bytes > 128 * 1024**2:
+                if not SHARED_SERVER_RESOURCES and sum(PENDING_BYTES.values()) + input_bytes > 128 * 1024**2:
                     raise HTTPException(429, detail={'error': '图片队列繁忙，请稍后重试'})
                 PENDING_BYTES[reservation] = input_bytes
             # Original insertion shares this reentrant lock, preventing races.
@@ -334,7 +337,7 @@ def run_task(self, key, mode, payload, identity, model):
         return ORIGINAL_RUN(self, key, mode, payload, identity, model)
     started = time.time()
     try:
-        with SLOTS:
+        with nullcontext() if SHARED_SERVER_RESOURCES else SLOTS:
             self._update_task(key, status='running', started_ts=time.time(),
                               progress='gateway_generation', error='')
             result = image_request(payload, identity, mode)
@@ -548,7 +551,7 @@ class CustomerGateway:
         submitting = path in ('/api/image-tasks/edits', '/api/image-tasks/generations') and scope['method'] == 'POST'
         acquired = False
         try:
-            if submitting:
+            if submitting and not SHARED_SERVER_RESOURCES:
                 acquired = TASK_UPLOAD_SLOTS.acquire(blocking=False)
                 if not acquired:
                     return await JSONResponse({'detail': {'error': '任务提交繁忙，请稍后重试'}},

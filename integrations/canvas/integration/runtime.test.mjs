@@ -29,6 +29,45 @@ const deferred = () => {
 const project = (title = '原稿', nodes = []) => ({ id: 'p', title, nodes, connections: [] });
 class CloudError extends Error { constructor(message, status) { super(message); this.status = status; } }
 
+test('画布同时提交所有图片，取消后的请求不提交，结果按原任务编号返回', async () => {
+    const originals = Object.fromEntries(['window', 'sessionStorage', 'localStorage', 'fetch'].map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
+    const gate = deferred();
+    const jobs = [];
+    globalThis.window = new EventTarget();
+    globalThis.sessionStorage = globalThis.localStorage = { getItem: () => 'test-only' };
+    globalThis.fetch = async (path, init = {}) => {
+        if (path.startsWith('/api/canvas/jobs/') && init.method === 'POST') {
+            const id = path.split('/').pop();
+            jobs.push({ id, status: 'success', asset_id: id });
+            await gate.promise;
+            return Response.json({ id, status: 'queued' });
+        }
+        if (path === '/api/canvas/jobs') return Response.json({ items: jobs });
+        if (path.startsWith('/api/canvas/assets/')) return new Response(new Blob(['image']));
+        throw new Error('Unexpected fixture request');
+    };
+    try {
+        const api = await load('../web/src/services/api/souhub.ts', {}, { '@/services/image-storage': 'export const setImageBlob=async(key)=>key;' });
+        const cancelled = new AbortController();cancelled.abort();
+        await assert.rejects(api.requestCanvasImage('取消', {}, [], undefined, cancelled.signal), { name: 'AbortError' });
+        assert.equal(jobs.length, 0);
+        const requests = Array.from({ length: 6 }, () => api.requestCanvasImage('并行生图', {}, []));
+        await new Promise((resolve) => setImmediate(resolve));
+        assert.equal(jobs.length, 6);
+        gate.resolve();
+        const results = await Promise.all(requests);
+        assert.equal(new Set(results.map((item) => item[0].id)).size, 6);
+        assert.deepEqual(results.map((item) => item[0].id), jobs.map((item) => item.id));
+        assert.equal(jobs.length, 6);
+    } finally {
+        gate.resolve();
+        for (const [name, descriptor] of Object.entries(originals)) {
+            if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+            else Reflect.deleteProperty(globalThis, name);
+        }
+    }
+});
+
 async function syncFixture() {
     globalThis.window = Object.assign(new EventTarget(), { __SOUHUB_CANVAS__: { owner: 'test' } });
     let state = { projects: [], deletedProjects: [] };

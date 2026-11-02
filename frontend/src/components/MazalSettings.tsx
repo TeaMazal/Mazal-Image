@@ -26,7 +26,7 @@ export default function MazalSettings() {
         <label className="flex justify-between gap-4">按 Enter 提交<input type="checkbox" checked={settings.enterSubmit} onChange={(event) => setSettings({ enterSubmit: event.target.checked })} /></label>
         <label className="flex justify-between gap-4">生成后清空描述<input type="checkbox" checked={settings.clearInputAfterSubmit} onChange={(event) => setSettings({ clearInputAfterSubmit: event.target.checked })} /></label>
         <label className="flex justify-between gap-4">显示批量创作入口<input type="checkbox" checked={settings.showBatchPrompt} onChange={(event) => setSettings({ showBatchPrompt: event.target.checked, batchPromptMode: 'queue', batchPromptConcurrency: 1 })} /></label>
-        <p className="text-xs leading-6 text-gray-500">张数可选 1～4 张，每张建立独立任务，按主站规则计费。多条描述可共用参考图和参数，每批最多 16 张，按顺序生成；停止只影响尚未提交的图片。局部编辑由模型参考遮罩修改，不能保证遮罩外像素完全不变。</p>
+        <p className="text-xs leading-6 text-gray-500">张数可选 1～4 张，每张建立独立任务，按主站规则计费。多条描述可共用参考图和参数，每批最多 16 张，同时提交，结果陆续显示。局部编辑由模型参考遮罩修改，不能保证遮罩外像素完全不变。</p>
       </>}
       {tab === 'data' && <>
         <p className="text-xs leading-6 text-gray-500">对话、草稿和作品按当前登录密钥保存在此浏览器。退出不会删除作品；清除浏览器数据会丢失本地记录。服务器缓存约保留 3 天，并可能因容量限制提前清理。</p>

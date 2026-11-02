@@ -1836,10 +1836,6 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
   const studioConversationId = state.activeStudioConversationId
   if (getActiveApiProfile(settings).provider === MAZAL_PROVIDER) {
     if (!options.allowFullMask && Date.now() - lastMazalSubmission < 1000) return []
-    if (state.tasks.filter((task) => task.status === 'running' || task.customRecoverable).length >= 2) {
-      showToast('你已有两个任务正在处理，请等待完成后再提交', 'error')
-      return []
-    }
   }
   const input = options.input
   const prompt = input ? input.prompts[0] ?? '' : state.prompt
@@ -1898,13 +1894,13 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
       return []
     }
   }
-  if (useStore.getState().batchProgress) {
+  if (activeProfile.provider !== MAZAL_PROVIDER && useStore.getState().batchProgress) {
     showToast('批量任务进行中，请等待完成或停止后再提交', 'error')
     return []
   }
   // 检查通过后立即占位，避免后续 await 期间重复提交启动第二批
   if (activeProfile.provider === MAZAL_PROVIDER) lastMazalSubmission = Date.now()
-  const batchId = batchPrompts.length ? beginBatch(batchPrompts.length) : 0
+  const batchId = batchPrompts.length && activeProfile.provider !== MAZAL_PROVIDER ? beginBatch(batchPrompts.length) : 0
 
   let orderedInputImages = inputImages
   let maskImageId: string | null = null
@@ -2008,7 +2004,7 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
 
   if (batchPrompts.length) {
     useStore.getState().showToast(activeProfile.provider === MAZAL_PROVIDER
-      ? `已开始排队生成 ${batchPrompts.length} 张图片，每张按主站规则单独计费`
+      ? `已提交 ${batchPrompts.length} 张图片，每张按主站规则单独计费`
       : `已开始批量提交 ${batchPrompts.length} 条提示词`, 'success')
   } else {
     await startTask(prompt.trim())
@@ -2035,7 +2031,11 @@ export async function submitTask(options: { allowFullMask?: boolean; useCurrentA
   }
 
   if (batchPrompts.length) {
-    const limit = activeProfile.provider === MAZAL_PROVIDER || normalizedSettings.batchPromptMode === 'queue'
+    if (activeProfile.provider === MAZAL_PROVIDER) {
+      for (const taskPrompt of batchPrompts) await startTask(taskPrompt)
+      return taskIds
+    }
+    const limit = normalizedSettings.batchPromptMode === 'queue'
       ? 1
       : normalizedSettings.batchPromptConcurrencyLimited ? normalizedSettings.batchPromptConcurrency : batchPrompts.length
     await runBatchPrompts(batchId, batchPrompts, limit, startTask)

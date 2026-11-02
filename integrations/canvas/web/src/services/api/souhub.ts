@@ -45,19 +45,9 @@ export async function initializeCanvas() {
     return current;
 }
 
-let activeRequests = 0;
-const waiting: (() => void)[] = [];
 export async function requestCanvasImage(prompt: string, config: { size?: string; quality?: string }, images: string[], context?: { projectId: string; nodeId: string; imageId?: string }, signal?: AbortSignal) {
-    // 多图逐张提交，始终只占用两个活动名额；尚未提交的取消不会扣费。
-    if (activeRequests >= 2) await new Promise<void>((resolve) => waiting.push(resolve));
-    activeRequests++;
-    try {
-        if (signal?.aborted) throw new DOMException("已停止排队", "AbortError");
-        return await runCanvasImage(prompt, config, images, context, signal);
-    } finally {
-        activeRequests--;
-        waiting.shift()?.();
-    }
+    if (signal?.aborted) throw new DOMException("已停止提交", "AbortError");
+    return runCanvasImage(prompt, config, images, context, signal);
 }
 
 async function runCanvasImage(prompt: string, config: { size?: string; quality?: string }, images: string[], context?: { projectId: string; nodeId: string; imageId?: string }, signal?: AbortSignal) {

@@ -70,6 +70,15 @@ class CanvasTests(unittest.TestCase):
         backup=next((Path(state.name)/'backups').glob('*/complete')).parent
         with sqlite3.connect(backup/'canvas.sqlite3') as c:self.assertEqual(c.execute('PRAGMA integrity_check').fetchone()[0],'ok')
         self.assertEqual((backup/'assets'/'alice'/asset['id']).read_bytes(),content)
+    def test_user_can_submit_more_than_two_active_jobs_without_repeating_existing_requests(self):
+        payload={'project_id':'p','node_id':'n','prompt':'产品白底图'}
+        with patch.object(service,'engine_request',return_value={'status':'queued'}) as engine:
+            for i in range(6):
+                self.assertEqual(self.request('POST','/api/canvas/jobs/j'+str(i),json=payload).status_code,200)
+            self.assertEqual(engine.call_count,6)
+            self.assertEqual(self.request('POST','/api/canvas/jobs/j0',json=payload).status_code,200)
+            self.assertEqual(engine.call_count,6)
+        self.assertEqual(len(self.request('GET','/api/canvas/jobs').json()['items']),6)
     def test_admin_and_quota_enforced(self):
         self.assertEqual(self.request('GET','/api/canvas/admin','bob').status_code,403)
         limits=service.settings();limits['quota_bytes']=1

@@ -9,6 +9,7 @@
 - `workbench-overrides/`：Souhub 已上线的工作台互通覆盖文件。共享工作台从仓库根 `frontend/` 取得；服务错误提示修复直接维护在根工作台。
 - `site-deploy/deploy/`：Souhub 画布网关与内部 HTTPS 入口模板。
 - `integration/compose.canvas.yml`：现有 Souhub Compose 布局的画布服务片段。`compose.image-internal.yml` 是内部 HTTPS 网络与证书挂载补充示例。
+- `compose.shared-resources.yml`：共享服务器资源模式，取消站内并发和容器资源配额；运行边界见运维文档。
 
 这是现有 Souhub 站点的可选集成，依赖原图片后端、主站 Sub2 用户身份与计费链路。默认安装器仍安装原稳定版；源码同步不表示其他站点已经部署画布。不要把这份 Souhub 网关模板直接覆盖到尚未完成接口合并的其他站点。
 

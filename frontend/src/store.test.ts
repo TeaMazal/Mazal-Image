@@ -6010,16 +6010,18 @@ describe('Mazal transparent output and independent image batches', () => {
 
   afterEach(() => stopBatchPrompts())
 
-  it('generates four independent single-image tasks sequentially even if imported settings request concurrency', async () => {
+  it('starts every image in a round without waiting for the first image to finish', async () => {
     const first = deferred<Awaited<ReturnType<typeof callImageApi>>>()
     vi.mocked(callImageApi).mockImplementationOnce(() => first.promise)
     useStore.setState((state) => ({ params: { ...state.params, n: 4 }, settings: { ...state.settings, batchPromptMode: 'concurrent', batchPromptConcurrency: 10 } }))
     const pending = submitTask()
-    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(1))
-    expect(useStore.getState().batchProgress).toMatchObject({ total: 4, started: 1, finished: 0 })
-    expect(useStore.getState().tasks).toHaveLength(1)
-    first.resolve({ images: ['data:image/png;base64,first'] })
     const ids = await pending
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(4))
+    expect(useStore.getState().batchProgress).toBeNull()
+    expect(useStore.getState().tasks).toHaveLength(4)
+    expect(useStore.getState().tasks.some((item) => item.status === 'running')).toBe(true)
+    first.resolve({ images: ['data:image/png;base64,first'] })
+    await vi.waitFor(() => expect(useStore.getState().tasks.every((item) => item.status === 'done')).toBe(true))
     expect(new Set(ids).size).toBe(4)
     expect(callImageApi).toHaveBeenCalledTimes(4)
     expect(vi.mocked(callImageApi).mock.calls.every(([options]) => options.params.n === 1)).toBe(true)
@@ -6028,24 +6030,26 @@ describe('Mazal transparent output and independent image batches', () => {
     expect(useStore.getState().batchProgress).toBeNull()
   })
 
-  it('stops pending images while allowing an already submitted image to finish', async () => {
+  it('allows another round while earlier images are still running', async () => {
     const first = deferred<Awaited<ReturnType<typeof callImageApi>>>()
-    vi.mocked(callImageApi).mockImplementationOnce(() => first.promise)
+    vi.mocked(callImageApi).mockImplementation(() => first.promise)
     useStore.setState({ params: { ...DEFAULT_PARAMS, n: 4 } })
-    const pending = submitTask()
-    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(1))
-    stopBatchPrompts()
-    await pending
+    await submitTask()
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(4))
+    await new Promise((resolve) => setTimeout(resolve, 1001))
+    useStore.setState({ params: { ...DEFAULT_PARAMS, n: 1 }, prompt: '第二轮' })
+    await submitTask()
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(5))
     first.resolve({ images: ['data:image/png;base64,finished'] })
-    await vi.waitFor(() => expect(useStore.getState().tasks[0].status).toBe('done'))
-    expect(callImageApi).toHaveBeenCalledTimes(1)
-    expect(useStore.getState().tasks).toHaveLength(1)
+    await vi.waitFor(() => expect(useStore.getState().tasks.every((item) => item.status === 'done')).toBe(true))
+    expect(useStore.getState().tasks).toHaveLength(5)
   })
 
   it('keeps successful images and retries only the selected failed image as one new task', async () => {
     vi.mocked(callImageApi).mockRejectedValueOnce(new Error('synthetic failure'))
     useStore.setState({ params: { ...DEFAULT_PARAMS, n: 3 } })
     await submitTask()
+    await vi.waitFor(() => expect(useStore.getState().tasks.filter((item) => item.status === 'done')).toHaveLength(2))
     const failed = useStore.getState().tasks.find((item) => item.status === 'error')!
     expect(failed).toBeDefined()
     expect(useStore.getState().tasks.filter((item) => item.status === 'done')).toHaveLength(2)
@@ -6117,17 +6121,18 @@ describe('customer conversation task isolation', () => {
     expect(useStore.getState().prompt).toBe('')
   })
 
-  it('keeps the whole sequential batch in A while the user drafts in B', async () => {
+  it('keeps the whole concurrent round in A while the user drafts in B', async () => {
     const a = useStore.getState().activeStudioConversationId!
     const first = deferred<Awaited<ReturnType<typeof callImageApi>>>()
     vi.mocked(callImageApi).mockImplementationOnce(() => first.promise)
     useStore.setState({ prompt: 'A 的三张图片', params: { ...DEFAULT_PARAMS, n: 3 } })
     const pending = submitTask()
-    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(callImageApi).toHaveBeenCalledTimes(3))
     const b = useStore.getState().createStudioConversation()
     useStore.getState().setPrompt('B 的下一轮')
     first.resolve({ images: ['data:image/png;base64,Zmlyc3Q='] })
     await pending
+    await vi.waitFor(() => expect(useStore.getState().tasks.every((item) => item.status === 'done')).toBe(true))
     expect(useStore.getState().tasks).toHaveLength(3)
     expect(useStore.getState().tasks.every((item) => item.studioConversationId === a && item.status === 'done')).toBe(true)
     const roundIds = new Set(useStore.getState().tasks.map((item) => item.studioRoundId))

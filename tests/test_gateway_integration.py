@@ -123,6 +123,47 @@ async def request(path, token='', method='GET', payload=None, engine=False, ip='
 
 
 class GatewayIntegrationTests(unittest.TestCase):
+    def test_shared_resources_admit_tasks_beyond_local_queue_and_owner_caps(self):
+        service = ImageTaskService(Path('/tmp/gateway-shared-resources.json'))
+        identity = integration.customer_identity(CUSTOMER)
+        service._tasks = {str(i): {'owner_id': identity['id'], 'status': 'running'} for i in range(40)}
+        payload = {'model': 'gpt-image-2', 'prompt': 'test', 'quality': 'auto', 'size': '1024x1024'}
+        with patch.object(integration, 'SHARED_SERVER_RESOURCES', True), patch.object(integration, 'ORIGINAL_SUBMIT', return_value={'id': 'shared'}) as submit:
+            self.assertEqual(service._submit(identity, client_task_id='shared', mode='generate', payload=payload), {'id': 'shared'})
+            submit.assert_called_once()
+            with self.assertRaises(integration.HTTPException) as error:
+                service._submit(identity, client_task_id='invalid', mode='generate', payload={**payload, 'prompt': ''})
+            self.assertEqual(error.exception.status_code, 400)
+
+    def test_shared_resources_execute_more_than_two_requests_at_once(self):
+        service = ImageTaskService(Path('/tmp/gateway-shared-workers.json'))
+        entered = threading.Barrier(6)
+        def image_request(*args):
+            entered.wait(timeout=5)
+            return {'data': [{'b64_json': 'aW1hZ2U='}]}
+        with patch.object(integration, 'SHARED_SERVER_RESOURCES', True), patch.object(integration, 'image_request', side_effect=image_request), patch.object(service, '_update_task') as update, patch.object(service, '_log_call'):
+            with ThreadPoolExecutor(max_workers=6) as pool:
+                futures = [pool.submit(service._run_task, str(i), 'generate', {}, {'source': 'sub2api'}, 'gpt-image-2') for i in range(6)]
+                for future in futures:future.result()
+        self.assertEqual(sum(call.kwargs.get('status') == 'success' for call in update.call_args_list), 6)
+
+    def test_shared_resources_remove_account_cap_without_selecting_unready_accounts(self):
+        from services.account_service import AccountService
+        service = object.__new__(AccountService)
+        service._image_inflight = {'ready': 100}
+        with patch.dict(os.environ, {'MI_SHARED_SERVER_RESOURCES': '1'}), patch.object(service, '_list_ready_candidate_tokens', return_value=['ready']):
+            self.assertEqual(config.image_account_concurrency, 0)
+            self.assertEqual(service._list_available_candidate_tokens(), ['ready'])
+
+    def test_shared_resources_proxy_can_use_server_resources_after_four_requests(self):
+        for _ in range(4):self.assertTrue(integration.PROXY_SLOTS.acquire(blocking=False))
+        try:
+            with patch.object(integration, 'SHARED_SERVER_RESOURCES', True):
+                self.assertEqual(asyncio.run(request('/v1/models', CUSTOMER))[0], 200)
+                self.assertEqual(asyncio.run(request('/v1/models', REVOKED))[0], 401)
+        finally:
+            for _ in range(4):integration.PROXY_SLOTS.release()
+
     def test_local_user_keys_cannot_be_minted_or_reused(self):
         with patch.object(integration.auth_service, 'authenticate', return_value={'id': 'old-local', 'role': 'user'}):
             self.assertIsNone(integration.local_identity('old-local-key'))

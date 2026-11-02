@@ -417,6 +417,8 @@ class ConfigStore:
 
     @property
     def image_account_concurrency(self) -> int:
+        if os.environ.get('MI_SHARED_SERVER_RESOURCES', '').lower() in ('1', 'true', 'yes'):
+            return 0
         try:
             return max(1, int(self.data.get("image_account_concurrency", 3)))
         except (TypeError, ValueError):

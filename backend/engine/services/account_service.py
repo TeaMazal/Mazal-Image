@@ -912,11 +912,11 @@ class AccountService:
             source_type: str | None = None,
             plan_types: set[str] | tuple[str, ...] | None = None,
     ) -> list[str]:
-        max_concurrency = max(1, int(config.image_account_concurrency or 1))
+        max_concurrency = config.image_account_concurrency
         return [
             token
             for token in self._list_ready_candidate_tokens(excluded_tokens, plan_type, source_type, plan_types)
-            if int(self._image_inflight.get(token, 0)) < max_concurrency
+            if max_concurrency == 0 or int(self._image_inflight.get(token, 0)) < max_concurrency
         ]
 
     def _acquire_next_candidate_token(
