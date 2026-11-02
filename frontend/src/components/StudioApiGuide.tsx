@@ -52,6 +52,26 @@ export default function StudioApiGuide() {
       <div className="studio-api-links"><a href={`${siteConfig.mainOrigin}/keys`} target="_blank" rel="noreferrer">获取或管理密钥 ↗</a><a href={`${siteConfig.mainOrigin}/usage`} target="_blank" rel="noreferrer">查看用量与扣费 ↗</a></div>
     </div>
     <details className="studio-api-examples">
+      <summary>Infinite Canvas · 接入设置</summary>
+      <p><a href="https://github.com/basketikun/infinite-canvas" target="_blank" rel="noreferrer">项目与下载 ↗</a></p>
+      <ol>
+        <li>在 API 配置中添加渠道，接口格式选 OpenAI，地址填写 <code>{baseUrl}</code>。</li>
+        <li>API Key 填主站绘图密钥，添加图片模型 <code>gpt-image-2</code>，并选为生图模型。</li>
+        <li>使用内置图片接口即可。上传参考图后会调用改图接口，支持多张参考图。</li>
+      </ol>
+    </details>
+    <details className="studio-api-examples">
+      <summary>AI Canvas · 接入设置</summary>
+      <p><a href="https://github.com/Tenney95/AI-Canvas-tauri" target="_blank" rel="noreferrer">项目与下载 ↗</a></p>
+      <ol>
+        <li>添加 OpenAI 兼容连接，地址填写 <code>{baseUrl}</code>，API Key 填主站绘图密钥。</li>
+        <li>添加图片模型 <code>gpt-image-2</code>，快捷适配选「GPT Image 2 · OpenAI 官方 Images」。</li>
+        <li>若手动配置，协议预设选 <code>openai-gpt-image</code>，参考图请求选 <code>edits-multipart</code>（上传文件）。</li>
+      </ol>
+      <p>该预设能读取 Base64 图片；改图时请使用文件上传模式。</p>
+    </details>
+    <p className="studio-api-key-note">两款工具建议先用 1024×1024、画质 auto、1 张测试；单次图片接口支持 1–4 张。返回格式保留默认即可。生成与改图均按主站规则计费；客户端中的 GPT Image 2.5 选项不代表本站账号池支持该模型。</p>
+    <details className="studio-api-examples">
       <summary>调用示例 · cURL</summary>
       <p>以下命令适用于 Bash 等终端。请在自己的环境中将 YOUR_API_KEY 替换为绘图密钥；改图时将 reference.png 替换为本地图片路径。</p>
       {[[ '生图示例', generation ], [ '改图示例', edit ]].map(([label, value]) => <div className="studio-api-example" key={label}>
