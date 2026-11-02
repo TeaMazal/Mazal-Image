@@ -20,6 +20,7 @@ export function ConfigCard() {
   const [proxyTestResult, setProxyTestResult] = useState<ProxyTestResult | null>(null);
   const logLevelOptions = ["debug", "info", "warning", "error"];
   const config = useSettingsStore((state) => state.config);
+  const imageConcurrencyManaged = useSettingsStore((state) => state.imageConcurrencyManaged);
   const isLoadingConfig = useSettingsStore((state) => state.isLoadingConfig);
   const isSavingConfig = useSettingsStore((state) => state.isSavingConfig);
   const setRefreshAccountIntervalMinute = useSettingsStore((state) => state.setRefreshAccountIntervalMinute);
@@ -200,12 +201,13 @@ export function ConfigCard() {
           <div className="space-y-2">
             <label className="text-sm text-stone-700">单账号图片并发</label>
             <Input
-              value={String(config?.image_account_concurrency || "")}
+              value={imageConcurrencyManaged ? "不限并发" : String(config?.image_account_concurrency ?? "")}
+              disabled={imageConcurrencyManaged}
               onChange={(event) => setImageAccountConcurrency(event.target.value)}
               placeholder="1"
               className="h-10 rounded-xl border-stone-200 bg-white"
             />
-            <p className="text-xs text-stone-500">限制每个账号同时处理的图片请求数量，默认 3。</p>
+            <p className="text-xs text-stone-500">{imageConcurrencyManaged ? "当前共享服务器资源，不设置单账号本地并发上限。" : "限制每个账号同时处理的图片请求数量，默认 3。"}</p>
           </div>
           <div className="space-y-2">
             <label className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-700">

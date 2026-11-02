@@ -68,6 +68,47 @@ test('画布同时提交所有图片，取消后的请求不提交，结果按�
     }
 });
 
+test('参考图读取或上传期间停止，完成后不能提交生图或发布任务事件', async () => {
+    const originals = Object.fromEntries(['window', 'sessionStorage', 'localStorage', 'fetch'].map((name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
+    try {
+        globalThis.window = new EventTarget();
+        globalThis.sessionStorage = globalThis.localStorage = { getItem: () => 'test-only' };
+        const api = await load('../web/src/services/api/souhub.ts', {}, { '@/services/image-storage': 'export const setImageBlob=async(key)=>key;' });
+        let posts = 0, events = 0;
+        window.addEventListener('souhub-job-submitted', () => events++);
+        for (const stage of ['reference', 'upload']) {
+            const entered = deferred(), resume = deferred();
+            globalThis.fetch = async (path, init = {}) => {
+                if (path === 'blob:reference') {
+                    if (stage === 'reference') { entered.resolve(); await resume.promise; }
+                    return new Response(new Blob(['reference']));
+                }
+                if (path === '/api/canvas/assets') {
+                    if (stage === 'upload') { entered.resolve(); await resume.promise; }
+                    return Response.json({ id: 'asset' });
+                }
+                if (path.startsWith('/api/canvas/jobs/') && init.method === 'POST') {
+                    posts++;
+                    return Response.json({ status: 'queued' });
+                }
+                throw new Error('Unexpected fixture request');
+            };
+            const controller = new AbortController();
+            const pending = api.requestCanvasImage('取消', {}, ['blob:reference'], undefined, controller.signal);
+            const rejected = assert.rejects(pending, { name: 'AbortError' });
+            await entered.promise; controller.abort(); resume.resolve();
+            await rejected;
+        }
+        assert.equal(posts, 0);
+        assert.equal(events, 0);
+    } finally {
+        for (const [name, descriptor] of Object.entries(originals)) {
+            if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+            else Reflect.deleteProperty(globalThis, name);
+        }
+    }
+});
+
 async function syncFixture() {
     globalThis.window = Object.assign(new EventTarget(), { __SOUHUB_CANVAS__: { owner: 'test' } });
     let state = { projects: [], deletedProjects: [] };

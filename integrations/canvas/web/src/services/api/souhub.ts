@@ -55,8 +55,10 @@ async function runCanvasImage(prompt: string, config: { size?: string; quality?:
     for (const image of images) {
         if (signal?.aborted) throw new DOMException("查询已暂停，任务仍可在任务列表中查看", "AbortError");
         const response = await fetch(image);
+        if (signal?.aborted) throw new DOMException("已停止提交", "AbortError");
         assets.push((await uploadCloudBlob(await response.blob())).id);
     }
+    if (signal?.aborted) throw new DOMException("已停止提交", "AbortError");
     const id = crypto.randomUUID();
     window.dispatchEvent(new CustomEvent("souhub-job-submitted", { detail: { ...context, jobId: id } }));
     const payload = { project_id: context?.projectId || "unassigned", node_id: context?.nodeId || "unassigned", image_id: context?.imageId || "unassigned", prompt, size: config.size || "auto", quality: config.quality || "auto", assets };
