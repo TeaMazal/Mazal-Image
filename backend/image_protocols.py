@@ -15,12 +15,14 @@ import uuid
 from fastapi import HTTPException
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
+from image_models import IMAGE_MODEL_NAMES, customer_image_models, enabled_image_models
+
 MODEL = 'gpt-image-2'
 MAX_BODY = 30 * 1024**2
 MAX_IMAGES = 8
 MAX_INPUT_BYTES = 24 * 1024**2
 TASK_ID = re.compile(r'(?:imgtask|resp)_[a-f0-9]{32}')
-GEMINI = re.compile(r'/v1beta/models/(gpt-image-2):(generateContent|streamGenerateContent)')
+GEMINI = re.compile(r'/v1beta/models/(' + '|'.join(re.escape(m) for m in IMAGE_MODEL_NAMES) + r'):(generateContent|streamGenerateContent)')
 CORS = {'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Authorization, Content-Type, Idempotency-Key, X-Goog-Api-Key, X-Client-Request-Id',
@@ -80,9 +82,12 @@ def content_parts(content, text, images, *, gemini=False):
             invalid('Only text and inline reference image parts are supported')
 
 
-def parse_request(body, protocol):
+def parse_request(body, protocol, path_model=None):
     if not isinstance(body, dict):
         invalid('The request body must be a JSON object')
+    model = body.get('model', path_model or MODEL)
+    if model not in enabled_image_models() or path_model and model != path_model:
+        invalid('This image model is not enabled, or does not match the requested path')
     if body.get('background') and body.get('stream'):
         invalid('Use background=true or stream=true, separately')
     for field in ('mask', 'background_color', 'output_format', 'output_compression', 'moderation', 'input_fidelity'):
@@ -124,8 +129,8 @@ def parse_request(body, protocol):
             if body.get(field):
                 invalid(field + ' is not supported by the image adapter')
     elif protocol in ('chat', 'responses'):
-        if body.get('model') != MODEL:
-            invalid('Use model gpt-image-2 for this image adapter')
+        if 'model' not in body:
+            invalid('Provide an enabled image model')
         for field in ('previous_response_id', 'conversation', 'response_format', 'functions', 'function_call'):
             if body.get(field):
                 invalid(field + ' is not supported by this image adapter')
@@ -167,8 +172,8 @@ def parse_request(body, protocol):
                 for field in ('background', 'output_format', 'output_compression', 'moderation', 'input_fidelity', 'mask'):
                     if field in tool:
                         invalid(field + ' is not supported by this image adapter')
-                if tool.get('model', MODEL) != MODEL:
-                    invalid('The image tool model must be gpt-image-2')
+                if tool.get('model', model) != model:
+                    invalid('The image tool model must match the requested model')
                 if tool.get('partial_images', 0) != 0:
                     invalid('Partial image previews are not supported; use partial_images=0')
                 action = tool.get('action', 'auto')
@@ -182,8 +187,6 @@ def parse_request(body, protocol):
                     invalid('instructions must be a string')
                 text.insert(0, body['instructions'])
     else:
-        if body.get('model', MODEL) != MODEL:
-            invalid('Use model gpt-image-2')
         if not isinstance(body.get('prompt'), str):
             invalid('prompt is required')
         text.append(body['prompt'])
@@ -212,13 +215,13 @@ def parse_request(body, protocol):
     result_format = 'b64_json' if protocol in ('responses', 'gemini') else body.get('response_format', 'url')
     if result_format not in ('url', 'b64_json'):
         invalid('response_format must be url or b64_json')
-    return {'prompt': prompt, 'model': MODEL, 'n': 1, 'size': size, 'quality': quality,
+    return {'prompt': prompt, 'model': model, 'n': 1, 'size': size, 'quality': quality,
             'response_format': result_format, **({'images': images} if images else {})}
 
 
 def public_task(task):
     state = {'queued': 'queued', 'running': 'in_progress', 'success': 'completed', 'error': 'failed'}[task['status']]
-    result = {'id': task['id'], 'object': 'image.task', 'model': MODEL, 'status': state,
+    result = {'id': task['id'], 'object': 'image.task', 'model': task.get('model') or MODEL, 'status': state,
               'created_at': int(task['created_ts'])}
     if task['status'] == 'success':
         result['result'] = {'data': task.get('data', []), **({'usage': task['usage']} if task.get('usage') else {})}
@@ -229,7 +232,7 @@ def public_task(task):
 
 def responses_result(task):
     result = {'id': task['id'], 'object': 'response', 'created_at': int(task['created_ts']),
-              'model': MODEL, 'status': {'queued': 'queued', 'running': 'in_progress', 'success': 'completed', 'error': 'failed'}[task['status']],
+              'model': task.get('model') or MODEL, 'status': {'queued': 'queued', 'running': 'in_progress', 'success': 'completed', 'error': 'failed'}[task['status']],
               'output': [], 'error': None, 'parallel_tool_calls': False}
     if task['status'] == 'success':
         for i, item in enumerate(task.get('data', [])):
@@ -260,7 +263,7 @@ def chat_result(task):
     message = {'role': 'assistant', 'content': '\n'.join('![image](' + u + ')' for u in urls),
                'images': [{'type': 'image_url', 'image_url': {'url': u}} for u in urls]}
     return {'id': 'chatcmpl-' + task['id'].split('_', 1)[1], 'object': 'chat.completion',
-            'created': int(task['created_ts']), 'model': MODEL,
+            'created': int(task['created_ts']), 'model': task.get('model') or MODEL,
             'choices': [{'index': 0, 'message': message, 'finish_reason': 'stop'}]}
 
 
@@ -271,7 +274,7 @@ def gemini_result(task):
             invalid('The image gateway did not return the requested base64 image', 502)
         parts.append({'inlineData': {'mimeType': 'image/png', 'data': item['b64_json']}})
     return {'candidates': [{'content': {'role': 'model', 'parts': parts}, 'finishReason': 'STOP', 'index': 0}],
-            'modelVersion': MODEL, 'responseId': task['id']}
+            'modelVersion': task.get('model') or MODEL, 'responseId': task['id']}
 
 
 class ImageProtocols:
@@ -384,7 +387,9 @@ class ImageProtocols:
             if path == '/v1/image-capabilities':
                 if scope['method'] != 'GET':
                     invalid('Method not allowed', 405)
-                return await JSONResponse({'model': MODEL, 'protocols': ['images', 'responses-image', 'chat-image', 'gemini-image', 'image-tasks'],
+                listing = await asyncio.to_thread(self.integration.gateway_request, '/v1/models', token, ip)
+                models = customer_image_models(listing)
+                return await JSONResponse({'model': MODEL if MODEL in models else next(iter(models), None), 'models': models, 'protocols': ['images', 'responses-image', 'chat-image', 'gemini-image', 'image-tasks'],
                     'max_images_per_task': 1, 'remote_reference_urls': False,
                     'partial_image_streaming': False, 'task_retention': 'same as existing image tasks; query before the configured expiry',
                     'idempotency': 'Idempotency-Key; scoped to API key and protocol, retained with task',
@@ -392,8 +397,9 @@ class ImageProtocols:
             if path == '/v1beta/models':
                 if scope['method'] != 'GET':
                     invalid('Method not allowed', 405)
-                return await JSONResponse({'models': [{'name': 'models/' + MODEL, 'displayName': MODEL + ' (image protocol adapter)',
-                    'supportedGenerationMethods': ['generateContent', 'streamGenerateContent']}]})(scope, receive, send)
+                listing = await asyncio.to_thread(self.integration.gateway_request, '/v1/models', token, ip)
+                return await JSONResponse({'models': [{'name': 'models/' + model, 'displayName': IMAGE_MODEL_NAMES[model],
+                    'supportedGenerationMethods': ['generateContent', 'streamGenerateContent']} for model in customer_image_models(listing)]})(scope, receive, send)
             match = re.fullmatch(r'/v1/(images/tasks|responses)/([A-Za-z0-9_-]+)', path)
             if match:
                 if scope['method'] != 'GET':
@@ -430,7 +436,7 @@ class ImageProtocols:
                     body = json.loads(raw)
                 except (ValueError, UnicodeError):
                     invalid('Invalid JSON')
-                payload = parse_request(body, protocol)
+                payload = parse_request(body, protocol, GEMINI.fullmatch(path)[1] if protocol == 'gemini' else None)
                 if protocol == 'task' and body.get('stream'):
                     invalid('Task creation returns JSON; query the task for progress')
                 await asyncio.to_thread(self.integration.image_tasks.check_request, payload['prompt'])
@@ -479,7 +485,7 @@ class ImageProtocols:
             yield event('response.in_progress', {'response': initial})
         elif protocol == 'chat':
             yield event('', {'id': 'chatcmpl-' + task['id'].split('_', 1)[1], 'object': 'chat.completion.chunk',
-                'model': MODEL, 'created': int(task['created_ts']), 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})
+                'model': task.get('model') or MODEL, 'created': int(task['created_ts']), 'choices': [{'index': 0, 'delta': {'role': 'assistant'}, 'finish_reason': None}]})
         waiter = asyncio.create_task(self.wait(identity, task['id']))
         try:
             while not waiter.done():

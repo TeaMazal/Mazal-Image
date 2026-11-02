@@ -5,17 +5,17 @@ import StudioHelpButton from './StudioHelp'
 import { siteConfig } from '../lib/siteConfig'
 
 type PriceData = { pricing: StudioImagePricing; balance: MazalBalance }
-let cached: { key: string; data: PriceData; at: number } | null = null
+let cached: { key: string; model: string; data: PriceData; at: number } | null = null
 
-export default function StudioPriceEstimate({ size, count }: { size: string; count: number }) {
+export default function StudioPriceEstimate({ size, count, model = 'gpt-image-2' }: { size: string; count: number; model?: string }) {
   const key = getMazalKey()
-  const [data, setData] = useState<PriceData | null>(() => cached?.key === key ? cached.data : null)
+  const [data, setData] = useState<PriceData | null>(() => cached?.key === key && cached.model === model ? cached.data : null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const details = useRef<HTMLDetailsElement>(null)
   async function refresh(signal?: AbortSignal, force = false) {
     if (document.visibilityState === 'hidden') return
-    if (!force && cached?.key === key && Date.now() - cached.at < 60_000) {
+    if (!force && cached?.key === key && cached.model === model && Date.now() - cached.at < 60_000) {
       setData(cached.data)
       return
     }
@@ -23,17 +23,17 @@ export default function StudioPriceEstimate({ size, count }: { size: string; cou
     try {
       const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000)
       const [pricing, balance] = await Promise.all([
-        mazalRequest<StudioImagePricing>('/v1/sub2api/image-pricing', { signal: requestSignal }),
+        mazalRequest<StudioImagePricing>(`/v1/sub2api/image-pricing?model=${encodeURIComponent(model)}`, { signal: requestSignal }),
         mazalRequest<MazalBalance>('/api/customer-balance', { signal: requestSignal }),
       ])
-      getStudioPriceEstimate(pricing, 'auto', 1)
+      getStudioPriceEstimate(pricing, 'auto', 1, model)
       if (signal?.aborted) return
-      cached = { key, data: { pricing, balance }, at: Date.now() }
+      cached = { key, model, data: { pricing, balance }, at: Date.now() }
       setData(cached.data)
       setError('')
     } catch {
       if (signal?.aborted) return
-      if (cached?.key === key) cached = null
+      if (cached?.key === key && cached.model === model) cached = null
       setData(null)
       setError('暂时无法查询价格')
     } finally {
@@ -54,7 +54,7 @@ export default function StudioPriceEstimate({ size, count }: { size: string; cou
     document.addEventListener('keydown', closeOnEscape)
     return () => { controller.abort(); window.clearInterval(timer); window.removeEventListener('focus', updateNow); window.removeEventListener('mazal-balance-refresh', updateNow); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeOnEscape) }
   }, [])
-  const estimate = data && count > 0 ? getStudioPriceEstimate(data.pricing, size, count) : null
+  const estimate = data && count > 0 ? getStudioPriceEstimate(data.pricing, size, count, model) : null
   const available = data ? getStudioAvailableBalance(data.balance) : null
   const range = (min: number, max: number) => min === max ? formatStudioUsd(min) : `${formatStudioUsd(min)}–${formatStudioUsd(max)}`
   return <div className="studio-price-estimate" aria-label="本轮费用估算">

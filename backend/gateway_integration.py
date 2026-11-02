@@ -22,6 +22,7 @@ from urllib.parse import quote, quote_from_bytes
 from fastapi import HTTPException
 from starlette.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse, Response
 from site_config import SITE_NAME, MAIN_ORIGIN, IMAGE_ORIGIN, GATEWAY
+from image_models import IMAGE_MODEL_NAMES, customer_image_models, enabled_image_models
 
 from api import support
 from services.auth_service import auth_service
@@ -153,6 +154,13 @@ async def proxy_gateway(scope, receive, send, token):
 
 
 async def proxy_validated_gateway(scope, receive, send, token):
+    if scope['path'] == '/v1/models' and scope['method'] in ('GET', 'HEAD'):
+        try:
+            listing = await asyncio.to_thread(gateway_request, '/v1/models', token, str((scope.get('client') or ('', 0))[0]))
+        except HTTPException as error:
+            return await JSONResponse({'error': {'message': error_message(error.detail)}}, status_code=error.status_code)(scope, receive, send)
+        models = customer_image_models(listing)
+        return await JSONResponse({'object': 'list', 'data': [item for item in listing.get('data', []) if isinstance(item, dict) and item.get('id') in models]}, headers={'Cache-Control': 'no-store'})(scope, receive, send)
     body = bytearray()
     while True:
         event = await receive()
@@ -165,6 +173,26 @@ async def proxy_validated_gateway(scope, receive, send, token):
         if not event.get('more_body'):
             break
     incoming = dict(scope.get('headers', []))
+    if scope['path'] in ('/v1/images/generations', '/v1/images/edits') and scope['method'] == 'POST':
+        from starlette.requests import Request
+        async def buffered():
+            return {'type': 'http.request', 'body': bytes(body), 'more_body': False}
+        request = Request(scope, buffered)
+        try:
+            if incoming.get(b'content-type', b'').lower().startswith(b'multipart/form-data'):
+                form = await request.form()
+                try:
+                    values = form.getlist('model')
+                    model = values[0] if len(values) == 1 else None
+                finally:
+                    await form.close()
+            else:
+                payload = json.loads(body)
+                model = payload.get('model') if isinstance(payload, dict) else None
+            if model not in enabled_image_models():
+                return await JSONResponse({'error': {'message': '此图片模型尚未开放，请选择当前可用模型'}}, status_code=400)(scope, receive, send)
+        except (ValueError, HTTPException):
+            return await JSONResponse({'error': {'message': '图片请求格式无效'}}, status_code=400)(scope, receive, send)
     client_ip = str((scope.get('client') or ('', 0))[0])
     headers = {'Authorization': 'Bearer ' + token, 'X-Real-IP': client_ip,
                'X-Forwarded-For': client_ip, 'X-Forwarded-Proto': 'https'}
@@ -298,8 +326,8 @@ def submit(self, identity, *, client_task_id, mode, payload):
         with self._lock:
             if not str(client_task_id).strip() or len(str(client_task_id)) > 128 or not str(payload.get('prompt') or '').strip() or len(str(payload.get('prompt') or '')) > 16000:
                 raise HTTPException(400, detail={'error': '任务编号或提示词为空，或超过长度限制'})
-            if payload.get('model') != 'gpt-image-2':
-                raise HTTPException(400, detail={'error': '此工作区仅支持 gpt-image-2'})
+            if payload.get('model') not in enabled_image_models():
+                raise HTTPException(400, detail={'error': '此图片模型尚未开放，请选择当前可用模型'})
             if payload.get('quality', 'auto') not in ('auto', 'low', 'medium', 'high'):
                 raise HTTPException(400, detail={'error': 'quality 必须为 auto、low、medium 或 high'})
             size = payload.get('size')
@@ -495,14 +523,15 @@ class CustomerGateway:
             models = []
             try:
                 listing = await asyncio.to_thread(gateway_request, '/v1/models', token, client_ip)
-                models = [item['id'] for item in listing.get('data', [])
-                          if isinstance(item, dict) and item.get('id') == 'gpt-image-2']
+                models = customer_image_models(listing)
                 if not models:
-                    notice = '当前密钥的模型列表未提供 gpt-image-2，生成时将由主站检查权限；如失败，请联系管理员。'
+                    notice = '当前密钥没有可用的绘图模型，请联系管理员检查分组和模型权限。'
             except HTTPException as error:
                 notice = error_message(error.detail)
             return await JSONResponse({'role': 'user', 'subject_id': customer_identity(token)['id'],
-                'balance': customer_balance(usage), 'models': models, 'notice': notice},
+                'balance': customer_balance(usage), 'models': models,
+                'image_model_catalog': [{'id': model, 'name': name, 'available': model in models}
+                                        for model, name in IMAGE_MODEL_NAMES.items()], 'notice': notice},
                 headers={'Cache-Control': 'no-store'})(scope, receive, send)
         if token:
             identity = await asyncio.to_thread(local_identity, token)
@@ -513,7 +542,8 @@ class CustomerGateway:
                 if path.startswith('/v1/') and os.environ.get('MI_LOCAL_ENGINE_IMAGE_ONLY', '1') == '1':
                     if path == '/v1/models' and scope['method'] in ('GET', 'HEAD'):
                         return await JSONResponse({'object': 'list', 'data': [
-                            {'id': 'gpt-image-2', 'object': 'model', 'created': 0, 'owned_by': 'mazal-image'}
+                            {'id': model, 'object': 'model', 'created': 0, 'owned_by': 'mazal-image'}
+                            for model in enabled_image_models()
                         ]})(scope, receive, send)
                     if path not in ('/v1/images/generations', '/v1/images/edits'):
                         return await JSONResponse({'detail': {'error': '此引擎仅提供图片生成和编辑'}},

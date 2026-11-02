@@ -1348,6 +1348,7 @@ export function getTaskApiProfile(settings: AppSettings, task: TaskRecord): ApiP
   const normalized = normalizeSettings(settings)
   if (!task.apiProfileId) return null
   const profile = normalized.profiles.find((item) => item.id === task.apiProfileId)
+  if (profile?.provider === MAZAL_PROVIDER && task.apiModel) return { ...profile, model: task.apiModel, selectedModel: task.apiModel }
   // 任务记录的模型仍在配置的模型列表中时，沿用任务提交时的模型
   return profile ? resolveApiProfileModel(profile, task.apiModel) : null
 }

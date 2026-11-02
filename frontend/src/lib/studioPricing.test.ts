@@ -4,6 +4,10 @@ import { getStudioAvailableBalance, getStudioPriceEstimate, type StudioImagePric
 const pricing: StudioImagePricing = { model: 'gpt-image-2', currency: 'USD', unit: 'image', prices: { '1K': .03, '2K': .05, '4K': .1 }, observed_at: '', billing_size_source: 'output' }
 
 describe('用户图片费用估算', () => {
+  it('不同模型的报价不互相替代', () => {
+    expect(() => getStudioPriceEstimate(pricing, 'auto', 1, 'gpt-image-2.5-flare')).toThrow()
+    expect(getStudioPriceEstimate({ ...pricing, model: 'gpt-image-2.5-flare' }, '1024x1024', 1, 'gpt-image-2.5-flare').totalMax).toBe(.03)
+  })
   it('按最长边分档并乘以真实图片数量', () => {
     expect(getStudioPriceEstimate(pricing, '1024x1024', 3)).toMatchObject({ tier: '1K', totalMin: .09, totalMax: .09 })
     expect(getStudioPriceEstimate(pricing, '1536x1024', 2)).toMatchObject({ tier: '2K', totalMax: .1 })

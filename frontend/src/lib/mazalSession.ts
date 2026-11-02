@@ -12,6 +12,7 @@ export interface MazalSession {
   role: 'user' | 'admin'
   balance: MazalBalance
   models: string[]
+  image_model_catalog?: Array<{ id: string; name: string; available: boolean }>
   notice: string
 }
 

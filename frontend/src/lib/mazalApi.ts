@@ -1,7 +1,8 @@
+import { getActiveApiProfile } from './apiProfiles'
 import type { TaskParams } from '../types'
 import { dataUrlToBlob } from './canvasImage'
 import { fetchImageUrlAsDataUrl, normalizeBase64Image, type CallApiOptions, type CallApiResult } from './imageApiShared'
-import { MazalRequestError, mazalRequest } from './mazalSession'
+import { MazalRequestError, mazalRequest, getMazalSession } from './mazalSession'
 
 export interface MazalTask {
   id: string
@@ -77,11 +78,13 @@ export async function pollMazalTask(id: string, _params?: TaskParams, submission
 
 export async function callMazalImageApi(opts: CallApiOptions): Promise<CallApiResult> {
   if (opts.params.n !== 1) throw new Error('每个任务生成一张图片，多张创作请使用批量排队。')
+  const model = getActiveApiProfile(opts.settings).model
+  if (!getMazalSession()?.models.includes(model)) throw new MazalTaskError('此图片模型尚未开放或当前密钥无权限，请重新选择可用模型。')
   const id = opts.clientTaskId ?? crypto.randomUUID()
   // 在发出请求前记录 ID；即使提交响应丢失，刷新后也能查询同一任务。
   await opts.onCustomTaskEnqueued?.({ taskId: id })
   setPhase(id, 'connecting')
-  const fields = { client_task_id: id, prompt: opts.prompt, model: 'gpt-image-2', size: opts.params.size, quality: opts.params.quality }
+  const fields = { client_task_id: id, prompt: opts.prompt, model, size: opts.params.size, quality: opts.params.quality }
   let init: RequestInit
   const editing = opts.inputImageDataUrls.length > 0
   if (editing) {

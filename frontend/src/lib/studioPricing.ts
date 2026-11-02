@@ -9,9 +9,9 @@ export interface StudioImagePricing {
   billing_size_source: 'output'
 }
 
-export function getStudioPriceEstimate(pricing: StudioImagePricing, size: string, count: number) {
+export function getStudioPriceEstimate(pricing: StudioImagePricing, size: string, count: number, model = 'gpt-image-2') {
   const tiers = ['1K', '2K', '4K'] as const
-  if (pricing.model !== 'gpt-image-2' || pricing.currency !== 'USD' || pricing.unit !== 'image' || !tiers.every((tier) => Number.isFinite(pricing.prices?.[tier]) && pricing.prices[tier] >= 0) || !Number.isSafeInteger(count) || count <= 0) throw new Error('价格数据暂时不可用')
+  if (pricing.model !== model || pricing.currency !== 'USD' || pricing.unit !== 'image' || !tiers.every((tier) => Number.isFinite(pricing.prices?.[tier]) && pricing.prices[tier] >= 0) || !Number.isSafeInteger(count) || count <= 0) throw new Error('价格数据暂时不可用')
   const dimensions = /^(\d+)x(\d+)$/.exec(size)
   const edge = dimensions ? Math.max(Number(dimensions[1]), Number(dimensions[2])) : 0
   const tier = edge > 0 ? edge <= 1024 ? '1K' : edge <= 2048 ? '2K' : '4K' : null

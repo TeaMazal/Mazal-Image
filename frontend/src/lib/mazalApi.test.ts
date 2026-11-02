@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from './apiProfiles'
 import { callMazalImageApi, pollMazalTask, mazalTaskStates, mazalTaskEvents } from './mazalApi'
 import { getMazalKey, mazalStorageName, saveMazalSession } from './mazalSession'
 import type { MazalSession } from './mazalSession'
+import { createMazalSettings } from './mazalConfig'
 
 const session: MazalSession = {
   subject_id: 'sub2api-test-a', role: 'user', models: ['gpt-image-2'], notice: '',
@@ -17,10 +18,42 @@ beforeEach(() => {
   sessionStorage.clear()
   localStorage.clear()
   saveMazalSession('sk-isolated-test', session, false)
+  opts.settings = createMazalSettings(DEFAULT_SETTINGS)
 })
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Mazal 任务适配', () => {
+  it('生成与编辑传递所选模型，不替换成默认模型', async () => {
+    const model = 'gpt-image-2.5-flare'
+    saveMazalSession('sk-isolated-test', { ...session, models: [model] }, false)
+    const settings = createMazalSettings(DEFAULT_SETTINGS)
+    const submitted: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (path: string, init?: RequestInit) => {
+      if (path.startsWith('data:')) return new Response(new Uint8Array([1, 2, 3]), { headers: { 'Content-Type': 'image/png' } })
+      if (init?.method === 'POST') {
+        submitted.push(init.body instanceof FormData ? String(init.body.get('model')) : JSON.parse(String(init.body)).model)
+        return json({ id: opts.clientTaskId })
+      }
+      return json({ items: [{ id: opts.clientTaskId, status: 'success', data: [{ b64_json: 'cG5n' }] }] })
+    }))
+    await callMazalImageApi({ ...opts, settings })
+    await callMazalImageApi({ ...opts, settings, inputImageDataUrls: ['data:image/png;base64,YQ=='] })
+    expect(submitted).toEqual([model, model])
+  })
+
+  it('历史模型已关闭时明确拒绝，提交前不保存虚假任务或退回默认模型', async () => {
+    const settings = createMazalSettings(DEFAULT_SETTINGS)
+    settings.profiles[0].model = 'gpt-image-2.5-flare'
+    settings.profiles[0].selectedModel = 'gpt-image-2.5-flare'
+    settings.model = 'gpt-image-2.5-flare'
+    const fetcher = vi.fn()
+    const enqueued = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    await expect(callMazalImageApi({ ...opts, settings, onCustomTaskEnqueued: enqueued })).rejects.toThrow('尚未开放')
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(enqueued).not.toHaveBeenCalled()
+  })
+
   it('提交响应丢失后只查询原编号，等待任务入队，不重复 POST', async () => {
     vi.useFakeTimers()
     let queries = 0

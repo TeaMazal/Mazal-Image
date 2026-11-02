@@ -341,7 +341,15 @@ class GatewayIntegrationTests(unittest.TestCase):
         self.assertEqual(service.list_tasks(other, ['same-id'])['missing_ids'], ['same-id'])
 
     def test_every_admin_route_denies_before_reading_or_changing_data(self):
-        routes = [route for route in integration.app.engine.routes
+        pending = list(integration.app.engine.routes)
+        flattened = []
+        while pending:
+            route = pending.pop()
+            if hasattr(route, 'original_router'):
+                pending.extend(route.original_router.routes)
+            else:
+                flattened.append(route)
+        routes = [route for route in flattened
             if getattr(route, 'path', '').startswith('/api/')
             and not route.path.startswith('/api/image-tasks')
             and not route.path.startswith('/api/workbench/')

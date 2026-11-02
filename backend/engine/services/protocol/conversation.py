@@ -1320,7 +1320,7 @@ def _generate_single_image(
             codex_model = is_codex_image_model(request.model)
             token = account_service.get_available_access_token(
                 plan_type=plan_type,
-                source_type="codex" if codex_model else None,
+                source_type="codex" if codex_model else "web",
                 plan_types=("plus", "team", "pro") if codex_model and not plan_type else None,
             )
         except RuntimeError as exc:
@@ -1533,6 +1533,8 @@ def _generate_single_image(
 
 def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[ImageOutput]:
     """并行生成多张图片，每张图片使用独立线程和账号，互不阻塞。"""
+    if split_image_model(request.model)[1] in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}:
+        raise ImageGenerationError("此模型需通过 Images 生成或编辑接口调用。", status_code=400)
     if not is_supported_image_model(request.model):
         raise ImageGenerationError("unsupported image model,supported models: " + ", ".join(sorted(IMAGE_MODELS)))
 

@@ -1997,7 +1997,7 @@ export default function InputBar() {
               <div className="studio-composer-params min-w-0 flex-1">{renderParams()}</div>
 
               <div className="studio-composer-submit flex items-center gap-3 flex-shrink-0">
-                {!isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
+                {!isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate key={activeProfile.model} model={activeProfile.model} size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                 <div
                   className="relative"
                   onMouseEnter={() => setSubmitHover(true)}
@@ -2049,7 +2049,7 @@ export default function InputBar() {
                   onMouseLeave={() => setSubmitHover(false)}
                 >
                   <ButtonTooltip visible={(activeAgentIsRunning || !hasSubmitApiConfig || batchRunning) && submitHover} text={submitTooltipText} />
-                  {isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
+                  {isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate key={activeProfile.model} model={activeProfile.model} size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                   <button
                     onClick={() => activeAgentIsRunning ? stopActiveAgentResponse() : hasSubmitApiConfig ? submitCurrentMode() : setShowSettings(true)}
                     disabled={activeAgentIsRunning ? false : hasSubmitApiConfig ? !canSubmit : false}

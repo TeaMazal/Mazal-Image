@@ -1,6 +1,6 @@
 import type { AppSettings, CustomProviderDefinition } from '../types'
 import { createDefaultOpenAIProfile, normalizeSettings } from './apiProfiles'
-import { getMazalKey, MAZAL_PROFILE, MAZAL_PROVIDER } from './mazalSession'
+import { getMazalKey, getMazalSession, MAZAL_PROFILE, MAZAL_PROVIDER } from './mazalSession'
 import { siteConfig } from './siteConfig'
 
 export const mazalProvider: CustomProviderDefinition = {
@@ -13,6 +13,9 @@ export const mazalProvider: CustomProviderDefinition = {
 }
 
 export function createMazalSettings(settings: AppSettings): AppSettings {
+  const models = getMazalSession()?.models ?? ['gpt-image-2']
+  const previous = settings.profiles.find((profile) => profile.id === MAZAL_PROFILE)?.selectedModel
+  const selected = previous && models.includes(previous) ? previous : models[0] ?? 'gpt-image-2'
   return normalizeSettings({
     ...settings,
     customProviders: [mazalProvider],
@@ -23,8 +26,9 @@ export function createMazalSettings(settings: AppSettings): AppSettings {
       provider: MAZAL_PROVIDER,
       baseUrl: window.location.origin + '/',
       apiKey: getMazalKey(),
-      model: 'gpt-image-2',
-      imageGenerationModel: 'gpt-image-2',
+      model: models.join(', ') || 'gpt-image-2',
+      selectedModel: selected,
+      imageGenerationModel: selected,
       timeout: 1800,
       apiMode: 'images',
       streamImages: false,

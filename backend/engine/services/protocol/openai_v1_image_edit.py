@@ -49,6 +49,11 @@ def _composite_mask(
 
 
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
+    from utils.helper import split_image_model
+    _, direct_model = split_image_model(body.get("model"))
+    if direct_model in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}:
+        from services.codex_images import handle as handle_codex_images
+        return handle_codex_images(body)
     prompt = str(body.get("prompt") or "")
     images = body.get("images") or []
     masks = body.get("mask") or []

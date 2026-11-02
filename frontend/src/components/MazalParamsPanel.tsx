@@ -1,8 +1,11 @@
+import { getMazalSession } from '../lib/mazalSession'
 import type { TaskParams } from '../types'
 import ParamPopoverChip from './input/paramPopoverChip'
 import { MAX_MAZAL_BATCH_TASKS, MAX_MAZAL_OUTPUT_IMAGES } from '../lib/mazalBatch'
 
-export default function MazalParamsPanel({ params, setParams, displaySize, onOpenSizePicker, batchEnabled, batchProgress, batchPromptCount, onBatchChange, onStopBatch, showBatch, onClearPrompt }: {
+export default function MazalParamsPanel({ model, onModelChange, params, setParams, displaySize, onOpenSizePicker, batchEnabled, batchProgress, batchPromptCount, onBatchChange, onStopBatch, showBatch, onClearPrompt }: {
+  model: string
+  onModelChange: (model: string) => void
   params: TaskParams
   setParams: (patch: Partial<TaskParams>) => void
   displaySize: string
@@ -15,7 +18,18 @@ export default function MazalParamsPanel({ params, setParams, displaySize, onOpe
   showBatch: boolean
   onClearPrompt?: () => void
 }) {
+  const session = getMazalSession()
+  const models = session?.image_model_catalog ?? (session?.models ?? ['gpt-image-2']).map((id) => ({ id, name: id, available: true }))
   return <div className="studio-image-params flex flex-wrap items-center gap-2 text-xs">
+    <ParamPopoverChip label="模型" ariaLabel="选择绘图模型" summary={models.find((item) => item.id === model)?.name ?? model}>
+      {(close) => <>
+        <p className="text-xs font-medium text-gray-700 dark:text-gray-200">绘图模型</p>
+        <div className="flex flex-col gap-2" role="group" aria-label="绘图模型选项">
+          {models.map((item) => <button key={item.id} type="button" disabled={!item.available || Boolean(batchProgress)} aria-pressed={model === item.id} onClick={() => { onModelChange(item.id); close() }} className={`flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 disabled:cursor-not-allowed disabled:opacity-50 ${model === item.id ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-500/20 dark:bg-blue-500/15 dark:text-blue-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.06] dark:text-gray-300'}`}><span>{item.name}</span><span>{item.available ? model === item.id ? '已选择' : '可用' : '暂未开放'}</span></button>)}
+        </div>
+        <p className="text-xs leading-5 text-gray-500">仅可选择已开放且当前密钥有权限的模型。所选模型用于接下来提交的创作。</p>
+      </>}
+    </ParamPopoverChip>
     <button onClick={onOpenSizePicker} className="rounded-full bg-black/[0.04] dark:bg-white/[0.06] px-3 py-2">尺寸 · {displaySize === 'auto' ? '自动' : displaySize}</button>
     <ParamPopoverChip label="张数" ariaLabel="生成张数" summary={`${params.n} 张`} disabled={Boolean(batchProgress)}>
       {(close) => <>
