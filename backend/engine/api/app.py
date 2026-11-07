@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from threading import Event
+import os
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,21 +25,23 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         stop_event = Event()
-        thread = start_limited_account_watcher(stop_event)
+        remote_accounts = os.environ.get('MI_REMOTE_ACCOUNT_MANAGEMENT', '').lower() in ('1', 'true', 'yes')
+        account_threads = []
+        if not remote_accounts:
+            account_threads.append(start_limited_account_watcher(stop_event))
+            account_service.activate_proxy_pool()
+            account_threads.append(proxy_pool_store.start_health_loop(stop_event))
+            account_threads.append(proxy_subscriptions.start_loop(stop_event))
         cleanup_thread = start_image_cleanup_scheduler(stop_event)
-        account_service.activate_proxy_pool()
-        pool_thread = proxy_pool_store.start_health_loop(stop_event)
-        subscription_thread = proxy_subscriptions.start_loop(stop_event)
         backup_service.start()
         config.cleanup_old_images()
         try:
             yield
         finally:
             stop_event.set()
-            thread.join(timeout=1)
+            for thread in account_threads:
+                thread.join(timeout=1)
             cleanup_thread.join(timeout=1)
-            pool_thread.join(timeout=1)
-            subscription_thread.join(timeout=1)
             backup_service.stop()
 
     app = FastAPI(title="chatgpt2api", version=app_version, lifespan=lifespan)

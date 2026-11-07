@@ -1,5 +1,7 @@
 # 两站统一维护与发布
 
+2026-11-07 Souhub 已将绘图 Web 账号迁至 Sub2，绘图站通过 `MI_REMOTE_ACCOUNT_MANAGEMENT=1` 关闭旧池及本地直接生图。后续以 [统一账号上线记录](UNIFIED_ACCOUNTS_20261107.md) 和 `operations/unified-accounts-current.json` 为准；不要重新启用旧渠道 725。新加坡 Mazal 保留原行为，本次未同步部署。
+
 日常功能只修改这份项目的 frontend/、backend/。sites/mazal.json 和 sites/souhub.json 保存品牌、公开域名和部署布局；账号池、用户、价格、运行配置及 SSH 私钥仍留在各站服务器，不进入发布包。
 
 **Souhub 是主力站和功能基准，Mazal 是下游同步站。** 以 Souhub 最新功能合成共享版本，再按站点配置同步到 Mazal。Mazal 独立开发的功能须单独审查与合并，不能把整站代码或旧共享包反向覆盖 Souhub。并行开发时，两站上线前均须再次核对 Souhub 最新改动。

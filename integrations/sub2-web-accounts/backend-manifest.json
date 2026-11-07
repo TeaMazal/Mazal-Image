@@ -1,0 +1,187 @@
+{
+  "internal/service/openai_web_account.go": {
+    "before": null,
+    "after": "3663367fe96c313ca93861577f0291746e6c79b419acf4a156f3d39f141c16a4",
+    "deployed_after": "3663367fe96c313ca93861577f0291746e6c79b419acf4a156f3d39f141c16a4"
+  },
+  "internal/service/openai_images_web.go": {
+    "before": null,
+    "after": "12c992e7fb562f8b13750534ae2dd32f68ea3766a1bec42cd52002765fdb9697",
+    "deployed_after": "12c992e7fb562f8b13750534ae2dd32f68ea3766a1bec42cd52002765fdb9697"
+  },
+  "internal/service/openai_images.go": {
+    "before": "d2a2dc1b1057d8d661849597a6f24426f69ef5403a7b5ce29ccddb98e610950e",
+    "after": "0ffaf86df9207af51f8efb14b003a6282823b38ca759499a33221952ea7816d3",
+    "deployed_after": "bf20ff4cc5b3faf22356bc6f1dedacc0b3f1fc2ef877f8f95a11f70051a1f659"
+  },
+  "internal/service/openai_model_retirement.go": {
+    "before": "2752eb71e63b1c99313bc4e033f5b6b36352c261a21bdfe17c4a56f4e2fa99e8",
+    "after": "1eeec974d65d4c8ce7e210bf7b91aa36bb47586c3967d43a43946c82b1dd458a",
+    "deployed_after": "528c95691e88869c0f794181352651e22d13ed7433e2caed727d500dae097b5d"
+  },
+  "internal/service/openai_account_scheduler.go": {
+    "before": "c51e6888d69dee39561e779b54890be4f1ee36c0dd3dbf4b191afaa6a8b4d402",
+    "after": "75e3da68392d61719b63aa72f22cac28649f173b4919626a3717b6a8fa0d7c92",
+    "deployed_after": "d2aef60dd666ef89005639c6fc464d705b9112b028c4ffd7e6cedaf7754e55fd"
+  },
+  "internal/service/account.go": {
+    "before": "65c641236f9358b36dfe7a29b8b7c985441be7ad87e8dc8ad51c9e1f0f602687",
+    "after": "908018a0e5de2a70e916b640922ff7c111d8e686e60c715cf2065e1ee5c44f5c",
+    "deployed_after": "ac52ed3b11ef161137c090023edb9113d21c3b836f2d4f0cc539d45f3d10bec4"
+  },
+  "internal/service/admin_account.go": {
+    "before": "69862eb835d6276dcf1deaf0dc13ffc717aeccc3ec9c591a01eddc784a9e2c09",
+    "after": "b2975fdb724a15d34bb08a95939e49f87bb11c9bd4712e4a8137c2152b878f99",
+    "deployed_after": "b2975fdb724a15d34bb08a95939e49f87bb11c9bd4712e4a8137c2152b878f99"
+  },
+  "internal/service/openai_web_account_test.go": {
+    "before": null,
+    "after": "f638fe569754c515dd464bdb8cdcba816a08d55c0d1ff77799af044eead8b30a",
+    "deployed_after": "f638fe569754c515dd464bdb8cdcba816a08d55c0d1ff77799af044eead8b30a"
+  },
+  "internal/service/openai_images_web_test.go": {
+    "before": null,
+    "after": "0f0a38a3ec4c1f36f19612912ee88b450a168e7ced2ba06e0a87d7c4203b5610",
+    "deployed_after": "0f0a38a3ec4c1f36f19612912ee88b450a168e7ced2ba06e0a87d7c4203b5610"
+  },
+  "internal/service/openai_web_usage.go": {
+    "before": null,
+    "after": "b37ea3134a11281dd2484265e59549220475f146a4b2c60eb120d3dec8b65eed",
+    "deployed_after": "b37ea3134a11281dd2484265e59549220475f146a4b2c60eb120d3dec8b65eed"
+  },
+  "internal/service/account_usage_service.go": {
+    "before": "f4c521059104e263518d727c73ffc91c399468b08b4d77975c098451c2b1f22a",
+    "after": "90a812f0065d5f57251ee41279f550044baf52b429fa72cfbaf94c6d7344514e",
+    "deployed_after": "90a812f0065d5f57251ee41279f550044baf52b429fa72cfbaf94c6d7344514e"
+  },
+  "internal/service/openai_gateway_forward.go": {
+    "before": "0f05310786e85dfd26ea8c482bf2b00de6c63643f452a465c218da714a6e9632",
+    "after": "8e744bf0f7b73454b8ed4dab2772404fddfadf02b5b3bdead53f96e82699c004",
+    "deployed_after": "8e744bf0f7b73454b8ed4dab2772404fddfadf02b5b3bdead53f96e82699c004"
+  },
+  "internal/service/openai_gateway_usage.go": {
+    "before": "5d251b01bcd5e104b2c20f7e7355df4fd6f0870ede9fce9d635ee2db286db3b4",
+    "after": "dc7da10a8ee071d5a608d1c5fbe0c4e60266f2c95a43ae17b2415bb8cd120ab3",
+    "deployed_after": "dc7da10a8ee071d5a608d1c5fbe0c4e60266f2c95a43ae17b2415bb8cd120ab3"
+  },
+  "internal/service/openai_web_admin.go": {
+    "before": null,
+    "after": "7ee081b8e88cb658ccaa6bf54d553a7668daa3b3e3ca6763abe81175c6a0e2ad",
+    "deployed_after": "7ee081b8e88cb658ccaa6bf54d553a7668daa3b3e3ca6763abe81175c6a0e2ad"
+  },
+  "internal/service/openai_web_admin_test.go": {
+    "before": null,
+    "after": "b2b298ce9f8284a4f13650bdbe211c1fa01d3d93d63c5196fee1e62f536c2eb1",
+    "deployed_after": "b2b298ce9f8284a4f13650bdbe211c1fa01d3d93d63c5196fee1e62f536c2eb1"
+  },
+  "internal/service/account_test_service.go": {
+    "before": "5548189c849efa33200a89f0727b1130bc273e7fed90ccbc235451d867ce111c",
+    "after": "b255d73c911a734804cb4db99fadbfb0c19bc0af268b84e7da64df2eb8d257b6",
+    "deployed_after": "c75dd34699329a10227bd387551647b37a07d684dbffffedf493d8344cd66d41"
+  },
+  "internal/service/openai_models_list.go": {
+    "before": "428493a09fa1b0c181904371bc2ed8116f6e6fcc01c56d3a55ed92202670053e",
+    "after": "0efd9b904476a8c337a050a6317171693c5930c3443fec34a763e6e92aa42f9b",
+    "deployed_after": "3d4f9f4fba15e4106c8bc5a121c0c1737b19952a65c98906d1b387d47375c0e3"
+  },
+  "internal/service/openai_quota_service.go": {
+    "before": "52cb5cf06f5b0c59ce23c2f7ebd895a8e12a625a6f064171c8eaed5ea6b8bea0",
+    "after": "99969ec1333fd69bd2a7c98547302ef6aa1d736b7a80904c9bd85e75aa060e25",
+    "deployed_after": "81a2f2c4d4bbf629af1e57d7fe4a6885b88c2dced99d725c5e53be32f57910d8"
+  },
+  "resources/chatgpt_web/LICENSE.Mazal-Image": {
+    "before": null,
+    "after": "227d9e2b87e77e8a23b3e2d9841b21b125faa417b0d4baacb6571f4ef37e63e4",
+    "deployed_after": "227d9e2b87e77e8a23b3e2d9841b21b125faa417b0d4baacb6571f4ef37e63e4"
+  },
+  "resources/chatgpt_web/test_worker.py": {
+    "before": null,
+    "after": "22c0cf66f38e1e211c84de7979a1f61f786af720ede812b613e830322d5a373e",
+    "deployed_after": "22c0cf66f38e1e211c84de7979a1f61f786af720ede812b613e830322d5a373e"
+  },
+  "resources/chatgpt_web/UPSTREAM.json": {
+    "before": null,
+    "after": "1c8f2e82889b6c1ef818cca5b41b8e4d43184550149b6e93c75cbf4834eaccd5",
+    "deployed_after": "cdb58262f029c22c65ce7d9c4b34cd9d995ee823dd1f1cedceba950e5df1efba"
+  },
+  "resources/chatgpt_web/worker.py": {
+    "before": null,
+    "after": "2ce8857209fedf115ada698ce524817cc1c14010e3f87bdb483a761f02f5e961",
+    "deployed_after": "2ce8857209fedf115ada698ce524817cc1c14010e3f87bdb483a761f02f5e961"
+  },
+  "resources/chatgpt_web/services/account_service.py": {
+    "before": null,
+    "after": "6a38752b547a08b21080123cc91fb3e51f8b3a2944ae30d24c3cdd447f85c04b",
+    "deployed_after": "6a38752b547a08b21080123cc91fb3e51f8b3a2944ae30d24c3cdd447f85c04b"
+  },
+  "resources/chatgpt_web/services/config.py": {
+    "before": null,
+    "after": "8dc2194573a86a89689196af819c3c60c5ea81793415251a9a8a2331ec208d70",
+    "deployed_after": "8dc2194573a86a89689196af819c3c60c5ea81793415251a9a8a2331ec208d70"
+  },
+  "resources/chatgpt_web/services/openai_backend_api.py": {
+    "before": null,
+    "after": "502d86ea7e461e494c9760933083df3260a43cd463f2675b5af297ac07e371be",
+    "deployed_after": "1f93224903cc121f09d3704f6be804b0109ff4a3cfbf6e03b7ecc02a0864f85f"
+  },
+  "resources/chatgpt_web/services/proxy_pool_service.py": {
+    "before": null,
+    "after": "8771f1b9848eb497516c6bd4d5e084399ecf7d036ab703ba3f042c5816e3aa32",
+    "deployed_after": "8771f1b9848eb497516c6bd4d5e084399ecf7d036ab703ba3f042c5816e3aa32"
+  },
+  "resources/chatgpt_web/services/proxy_service.py": {
+    "before": null,
+    "after": "68daad273b00d279f001594f7b307db5cbbf1dccb55632c7e709e05d0682ac44",
+    "deployed_after": "68daad273b00d279f001594f7b307db5cbbf1dccb55632c7e709e05d0682ac44"
+  },
+  "resources/chatgpt_web/services/sentinel_solver_client.py": {
+    "before": null,
+    "after": "c8e0d04f07b3831a361a31a932bdc0bc8260d7baba40b1bcf31e9802aa0d0aa9",
+    "deployed_after": "9978674144ad9399dc5c9ca90d4e894abd2c65402c7de4ebc3eaae034511f51f"
+  },
+  "resources/chatgpt_web/services/__init__.py": {
+    "before": null,
+    "after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "deployed_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "resources/chatgpt_web/utils/helper.py": {
+    "before": null,
+    "after": "1e500cf6f417450c533c588753dc0ffbf5b6d9db17a18f06f5dc71c9bc474b76",
+    "deployed_after": "4c4f9da3838b320425dbc383e0b12841e20940a01198503846b5519f7c30b160"
+  },
+  "resources/chatgpt_web/utils/identity.py": {
+    "before": null,
+    "after": "a87572fb2e33a04702c954603c1db7751111cfc299116e38fae8781693029957",
+    "deployed_after": "30843ad0c1b2808520c8202b193ab7f94966f2e916b9b51676b8a7608fcc6664"
+  },
+  "resources/chatgpt_web/utils/log.py": {
+    "before": null,
+    "after": "abf4dcdd05f8ba21f6a9a575c554912044b78ed50801e312e4aa1da8bc363e5a",
+    "deployed_after": "abf4dcdd05f8ba21f6a9a575c554912044b78ed50801e312e4aa1da8bc363e5a"
+  },
+  "resources/chatgpt_web/utils/pow.py": {
+    "before": null,
+    "after": "4cfc00e0298135c71d7b36cb76ccd2d46b6f28f7166172ea04e83f9508e69123",
+    "deployed_after": "42cbbc29cb5bf34c3bad38ffa4b216b85371f865fe85ecdec3efc7e773bc548c"
+  },
+  "resources/chatgpt_web/utils/__init__.py": {
+    "before": null,
+    "after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "deployed_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "resources/chatgpt_web/services/protocol/conversation.py": {
+    "before": null,
+    "after": "3997e2dfd55b9968735cb9992b936e0c62b49313ffc5fcd086b14fda7edccb00",
+    "deployed_after": "c1943c51b40662f1547ebe74ecdf677e0eb7754020d001d4f9412fec07758e21"
+  },
+  "resources/chatgpt_web/services/protocol/__init__.py": {
+    "before": null,
+    "after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "deployed_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "internal/handler/admin/account_handler.go": {
+    "before": "745be78198a7844efd9bfc7d20a69f8b7dd79419f877b40b6f3e385f0cf6dbd2",
+    "after": "ecc5ceb55ba0eeb620ddeb59350fcea3bfc7097f44bd75f984911b2ee3a15d23",
+    "deployed_after": "ecc5ceb55ba0eeb620ddeb59350fcea3bfc7097f44bd75f984911b2ee3a15d23"
+  }
+}

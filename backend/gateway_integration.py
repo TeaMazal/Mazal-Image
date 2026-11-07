@@ -1,7 +1,8 @@
-"""Use Sub2API customer keys for the workbench; keep engine/admin keys local.
+"""Use Sub2API customer keys for the workbench; keep admin keys local.
 
 Only the original engine key can reach the engine's /v1 endpoints. Customer
 tasks call Sub2API's real image gateway, so its billing cannot be bypassed.
+With remote account management, local account operations and generation are disabled.
 """
 import asyncio
 import contextvars
@@ -31,6 +32,7 @@ from utils import helper as image_helper
 
 CONTEXT = contextvars.ContextVar('mazal_gateway_context', default={})
 SHARED_SERVER_RESOURCES = os.environ.get('MI_SHARED_SERVER_RESOURCES', '').lower() in ('1', 'true', 'yes')
+REMOTE_ACCOUNT_MANAGEMENT = os.environ.get('MI_REMOTE_ACCOUNT_MANAGEMENT', '').lower() in ('1', 'true', 'yes')
 SLOTS = threading.BoundedSemaphore(2)
 PENDING_BYTES = {}
 PROXY_SLOTS = threading.BoundedSemaphore(4)
@@ -406,6 +408,15 @@ class CustomerGateway:
         auth = headers.get(b'authorization', b'').decode('latin1')
         token = support.extract_bearer_token(auth)
         path = scope.get('path', '')
+        if REMOTE_ACCOUNT_MANAGEMENT:
+            if path.rstrip('/') in ('/accounts', '/proxies') and scope['method'] in ('GET', 'HEAD'):
+                destination = '/admin/proxies' if path.rstrip('/') == '/proxies' else '/admin/accounts'
+                return await RedirectResponse(MAIN_ORIGIN + destination, status_code=307,
+                    headers={'Cache-Control': 'no-store'})(scope, receive, send)
+            if path.startswith(('/api/accounts', '/api/cpa/', '/api/sub2api/', '/api/proxy/')):
+                return await JSONResponse({'detail': {'error': '账号和代理已统一到主站管理',
+                    'management_url': MAIN_ORIGIN + '/admin/accounts'}}, status_code=410,
+                    headers={'Cache-Control': 'no-store'})(scope, receive, send)
         if path in ('/site-config.js', '/manifest.webmanifest'):
             if scope['method'] not in ('GET', 'HEAD'):
                 return await Response(status_code=405)(scope, receive, send)
@@ -540,6 +551,10 @@ class CustomerGateway:
             identity = await asyncio.to_thread(local_identity, token)
             if identity:
                 context['identity'] = identity
+                if REMOTE_ACCOUNT_MANAGEMENT and (path.startswith('/v1/') or
+                        path in ('/api/image-tasks/generations', '/api/image-tasks/edits', '/api/templates/optimize')):
+                    return await JSONResponse({'detail': {'error': '请使用主站用户密钥生成图片；本地管理密钥只用于管理作品'}},
+                        status_code=403)(scope, receive, send)
                 # Local credentials power the drawing engine, never a chat provider.
                 # Keep model synchronization from advertising upstream chat models.
                 if path.startswith('/v1/') and os.environ.get('MI_LOCAL_ENGINE_IMAGE_ONLY', '1') == '1':

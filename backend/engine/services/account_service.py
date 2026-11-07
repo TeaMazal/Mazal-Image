@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import secrets
 import time
 import uuid
@@ -120,6 +121,8 @@ class AccountService:
         return datetime.fromtimestamp(ts, tz=timezone.utc).astimezone(tz).isoformat()
 
     def _load_accounts(self) -> dict[str, dict]:
+        if os.environ.get('MI_REMOTE_ACCOUNT_MANAGEMENT', '').lower() in ('1', 'true', 'yes'):
+            return {}
         accounts = self.storage.load_accounts()
         return {
             normalized["access_token"]: normalized
@@ -128,6 +131,8 @@ class AccountService:
         }
 
     def _save_accounts(self) -> None:
+        if os.environ.get('MI_REMOTE_ACCOUNT_MANAGEMENT', '').lower() in ('1', 'true', 'yes'):
+            raise RuntimeError('Accounts are managed by the main gateway')
         self.storage.save_accounts(list(self._accounts.values()))
 
     @staticmethod

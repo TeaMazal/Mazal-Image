@@ -1,0 +1,3 @@
+* text eol=lf
+# Unified diff context markers and vendored source whitespace are intentional.
+backend.patch -whitespace

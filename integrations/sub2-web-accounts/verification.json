@@ -1,0 +1,47 @@
+{
+  "passed": true,
+  "checks": {
+    "main_release_and_bridge": true,
+    "main_networks_persisted": true,
+    "remote_ownership_and_shared_resources": true,
+    "legacy_accounts_archived_and_empty": true,
+    "workbench_canvas_and_maintenance_unchanged": true,
+    "existing_task_history_preserved": true,
+    "legacy_management_and_unbilled_generation_disabled": true,
+    "customer_login_and_verified_models": true,
+    "customer_quote_available": true,
+    "customer_history_and_balance_available": true,
+    "image_group_uses_direct_web_accounts": true,
+    "group_prices_preserved": true,
+    "schema_unchanged": true,
+    "real_and_mock_billing_verified": true
+  },
+  "migration": {
+    "web_migrated": 23,
+    "web_enabled": 19,
+    "web_paused": 4,
+    "legacy_codex_migrated_paused": 0,
+    "existing_codex_preserved": 2,
+    "old_engine_disabled": true,
+    "group_and_prices_preserved": true
+  },
+  "enabled_models": [
+    "gpt-image-2"
+  ],
+  "quote": {
+    "billing_size_source": "output",
+    "currency": "USD",
+    "model": "gpt-image-2",
+    "observed_at": "2026-11-07T06:06:03.680228595Z",
+    "prices": {
+      "1K": 0.03,
+      "2K": 0.06,
+      "4K": 0.09
+    },
+    "unit": "image"
+  },
+  "existing_tasks": 0,
+  "real_images": 2,
+  "production_users_charged_by_validation": false,
+  "codex25_verified": false
+}
