@@ -12,6 +12,8 @@ Souhub 于 2026-10-31 07:17 UTC 增量上线图片协议扩展，增加 `backend
 
 ## 发布
 
+2026-11-07 Souhub 整合 chatgpt2api PR #406/#418/#419/#420/#424：新握手、内网浏览器辅助服务、代理池/订阅、2.5 路由与 GIF 管理测试接口。当前发布状态与镜像以 `operations/chat2-updates-current.json` 为准，详见 [更新与验收记录](CHAT2_UPDATES_20261107.md)。用户工作台与画布静态文件保持逐字节一致，账号池/用户数据/配置保留，资源配额仍解除。普通 Image 2 实测成功；GIF 返回静态 PNG，2.5 未进行本轮真实出图验收，两者不能直接向用户开放。代理池默认关闭。实际主站现为 `sub2api-souhub-accounts-r26`，已补回内部绘图网络；不要再用已停止的 `sub2api-subscription-r18` 验收主站。未向 Mazal 部署。
+
 2026-11-02 Souhub 上线输入区模型菜单、按所选模型传递生成/编辑请求、历史模型记录及报价隔离。当前仅开放 Image 2，2.5 Flare/Sunburst 保持“暂未开放”：导入账号直调图片接口返回 403，两个 Responses 驱动验证均返回 400，没有成功图片。仓库后端 105 项、生产组合版 102 项、工作台 946 项测试及两套前端构建通过；公网电脑/手机模型菜单、权限、报价和引擎开放校验通过。当前 backend 为 `sha256:300978434c5e8adcefb16edcc71fd86876b7a48b450421dfaadaf9956ce0f476`，web 为 `sha256:fe350c164b6692ef397262e5e07e3186a3de48bcb0e55c3db505adcfb680f778`。操作指针 `operations/image-models-current.json`，保留共享资源和 Souhub 站点差异，主站、画布及维护服务未重启；未向 Mazal 部署。能力边界、测试与回退见 [模型选择发布记录](IMAGE_MODEL_SELECTION.md)。
 
 2026-11-02 Souhub 补充 Infinite Canvas 与 AI Canvas 接入说明，现有 native Images 接口通过两款客户端上游请求构建和图片解析代码的 20 项隔离检查。本次仅更新工作台说明与缓存标识；943 项前端测试及公网电脑/手机说明页验收通过，后端和主站未重启，没有发起付费生成。当前 web 为 `sha256:4e912f60b18b0ab10e7d26b446b4ad20bc25367c066f53fef88595b6e2239942`，操作指针 `operations/canvas-clients-current.json`；完整接入配置、验证边界及回退见 [第三方画布接入](CANVAS_CLIENTS.md)。后续部署须保留上一轮后台不限并发和画布取消修复；未向 Mazal 部署。

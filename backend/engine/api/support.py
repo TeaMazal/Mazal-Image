@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from threading import Event, Thread
 
 from fastapi import HTTPException, Request
@@ -124,6 +125,12 @@ def resolve_web_asset(requested_path: str) -> Path | None:
         base_dir / clean_path / "index.html",
         base_dir / f"{clean_path}.html",
     ]
+    # Next's segment-prefetch URL can use a dotted page name while the
+    # static exporter writes a nested __PAGE__ file. Prefer the current
+    # nested export over stale dotted files retained from an earlier build.
+    segment = re.fullmatch(r"([^/]+)/(__next\.[A-Za-z0-9_-]+)\.__PAGE__\.txt", clean_path)
+    if segment:
+        candidates.insert(0, base_dir / segment[1] / segment[2] / "__PAGE__.txt")
     for candidate in candidates:
         try:
             candidate.resolve().relative_to(base_dir)

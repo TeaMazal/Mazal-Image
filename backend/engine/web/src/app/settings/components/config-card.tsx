@@ -40,6 +40,10 @@ export function ConfigCard() {
   const setBaseUrl = useSettingsStore((state) => state.setBaseUrl);
   const setGlobalSystemPrompt = useSettingsStore((state) => state.setGlobalSystemPrompt);
   const setDefaultUpstreamModelName = useSettingsStore((state) => state.setDefaultUpstreamModelName);
+  const setImage25Route = useSettingsStore((state) => state.setImage25Route);
+  const setCodexResponsesModel = useSettingsStore((state) => state.setCodexResponsesModel);
+  const setDefaultUpstreamModelName25 = useSettingsStore((state) => state.setDefaultUpstreamModelName25);
+  const setCodexImageModel25Name = useSettingsStore((state) => state.setCodexImageModel25Name);
   const setDefaultThinkingEffort = useSettingsStore((state) => state.setDefaultThinkingEffort);
   const setSensitiveWordsText = useSettingsStore((state) => state.setSensitiveWordsText);
   const setAIReviewField = useSettingsStore((state) => state.setAIReviewField);
@@ -141,6 +145,11 @@ export function ConfigCard() {
             </div>
           </div>
           <div className="space-y-2">
+            <label className="text-sm text-stone-700">出站代理池</label>
+            <p className="text-sm text-stone-500">多账号高并发需要多个出口，请在代理池页面管理订阅和账号绑定。</p>
+            <a href="/proxies" className="text-sm underline">管理代理池</a>
+          </div>
+          <div className="space-y-2">
             <label className="text-sm text-stone-700">图片访问地址</label>
             <Input
               value={String(config?.base_url || "")}
@@ -159,6 +168,50 @@ export function ConfigCard() {
               className="h-10 rounded-xl border-stone-200 bg-white"
             />
             <p className="text-xs text-stone-500">gpt-image-2 发起图片请求时使用的上游模型名称，默认 gpt-5-5。</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-stone-700">Image 2.5 调用通道</label>
+            <Select value={String(config?.image25_route || "codex")} onValueChange={setImage25Route}>
+              <SelectTrigger className="h-10 rounded-xl border-stone-200 bg-white"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="codex">Codex 直接图片接口</SelectItem>
+                <SelectItem value="web">ChatGPT 网页图片接口</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-stone-500">使用对应来源的账号；失败时不自动换通道。模型需通过验收并开放后才能调用。</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-stone-700">Codex 生图驱动模型</label>
+            <Input value={String(config?.codex_responses_model || "")} onChange={(event) => setCodexResponsesModel(event.target.value)} placeholder="gpt-6.1-sol" className="h-10 rounded-xl border-stone-200 bg-white" />
+            <p className="text-xs text-stone-500">用于 Codex 图片工具调用，须在账号可用模型清单中；留空使用 gpt-6.1-sol。</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-stone-700">gpt-image-2.5 上游模型名称</label>
+            <Input
+              value={String(config?.default_upstream_model_name_25 || "")}
+              onChange={(event) => setDefaultUpstreamModelName25(event.target.value)}
+              placeholder="gpt-5-5"
+              className="h-10 rounded-xl border-stone-200 bg-white"
+            />
+            <p className="text-xs text-stone-500">
+              仅设置 gpt-image-2.5 别名的网页上游型号；留空使用 gpt-image-2.5-flare。明确指定 Flare 或 Sunburst 时原样传递。
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm text-stone-700">Codex 图片 2.5 工具模型</label>
+            <Select
+              value={String(config?.codex_image_model_25_name || "gpt-image-2.5-flare")}
+              onValueChange={(value) => setCodexImageModel25Name(value)}
+            >
+              <SelectTrigger className="h-10 rounded-xl border-stone-200 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gpt-image-2.5-flare">gpt-image-2.5-flare（默认）</SelectItem>
+                <SelectItem value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-stone-500">codex-gpt-image-2.5 调用 Codex 生图工具时使用的模型，默认 gpt-image-2.5-flare。</p>
           </div>
           <div className="space-y-2">
             <label className="text-sm text-stone-700">默认思考强度</label>

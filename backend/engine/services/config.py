@@ -516,6 +516,18 @@ class ConfigStore:
         return str(self.data.get("default_upstream_model_name") or "gpt-5-5").strip()
 
     @property
+    def default_upstream_model_name_25(self) -> str:
+        """gpt-image-2.5 别名的网页上游模型；留空使用明确的 2.5 Flare。"""
+        return str(self.data.get("default_upstream_model_name_25") or "").strip()
+
+    @property
+    def codex_image_model_25_name(self) -> str:
+        """Codex 链路中 gpt-image-2.5 对应的 image_generation 工具模型名。"""
+        value = str(self.data.get("codex_image_model_25_name") or "gpt-image-2.5-flare").strip().lower()
+        allowed = {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}
+        return value if value in allowed else "gpt-image-2.5-flare"
+
+    @property
     def default_thinking_effort(self) -> str:
         value = str(self.data.get("default_thinking_effort") or "auto").strip().lower()
         return value if value in {"auto", "standard", "extended", "max"} else "auto"
@@ -562,6 +574,24 @@ class ConfigStore:
             return "0.0.0"
         return value or "0.0.0"
 
+    @property
+    def sentinel_solver_url(self) -> str:
+        """常驻 Chromium 的 sentinel 求解服务地址。"""
+        return str(
+            os.getenv("CHATGPT2API_SENTINEL_SOLVER_URL")
+            or self.data.get("sentinel_solver_url")
+            or ""
+        ).strip().rstrip("/")
+
+    @property
+    def sentinel_solver_key(self) -> str:
+        """求解服务访问密钥，不通过设置接口返回。"""
+        return str(
+            os.getenv("CHATGPT2API_SENTINEL_SOLVER_KEY")
+            or self.data.get("sentinel_solver_key")
+            or ""
+        ).strip()
+
     def get(self) -> dict[str, object]:
         data = dict(self.data)
         data["base_url"] = self.base_url
@@ -582,12 +612,15 @@ class ConfigStore:
         data["ai_review"] = self.ai_review
         data["global_system_prompt"] = self.global_system_prompt
         data["default_upstream_model_name"] = self.default_upstream_model_name
+        data["default_upstream_model_name_25"] = self.default_upstream_model_name_25
+        data["codex_image_model_25_name"] = self.codex_image_model_25_name
         data["default_thinking_effort"] = self.default_thinking_effort
         data["backup"] = self.get_backup_settings()
         data["image_storage"] = self.get_image_storage_settings()
         data["chat_completion_cache"] = self.get_chat_completion_cache_settings()
         data["proxy_runtime"] = self.get_public_proxy_runtime_settings()
         data["third_party_apps"] = self.get_third_party_apps_settings()
+        data.pop("sentinel_solver_key", None)
         data.pop("auth-key", None)
         return data
 

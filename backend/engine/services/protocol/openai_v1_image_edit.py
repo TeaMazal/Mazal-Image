@@ -51,9 +51,12 @@ def _composite_mask(
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
     from utils.helper import split_image_model
     _, direct_model = split_image_model(body.get("model"))
+    from image_models import image25_route, validate_engine_image_model
+    validate_engine_image_model(body.get("model"))
     if direct_model in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}:
-        from services.codex_images import handle as handle_codex_images
-        return handle_codex_images(body)
+        if image25_route() == 'codex':
+            from services.codex_images import handle as handle_codex_images
+            return handle_codex_images({**body, 'model': direct_model})
     prompt = str(body.get("prompt") or "")
     images = body.get("images") or []
     masks = body.get("mask") or []
@@ -79,6 +82,7 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         images=encoded_images,
         message_as_error=True,
         progress_callback=progress_callback,
+        image_timeout_secs=body.get("image_timeout_secs"),
     ))
     if body.get("stream"):
         return stream_image_chunks(outputs)

@@ -135,6 +135,9 @@ def customer_balance(payload):
 
 
 async def proxy_gateway(scope, receive, send, token):
+    if scope['path'] in ('/v1/images/generations/gif', '/v1/images/edits/gif'):
+        return await JSONResponse({'error': {'message': 'GIF 接口当前仅供管理员验收，用户计费渠道尚未开放。'}},
+                                  status_code=403 if token else 401)(scope, receive, send)
     if not token:
         return await JSONResponse({'error': {'message': '请提供有效的 API 密钥'}}, status_code=401)(scope, receive, send)
     if not SHARED_SERVER_RESOURCES and not PROXY_SLOTS.acquire(blocking=False):
@@ -545,7 +548,7 @@ class CustomerGateway:
                             {'id': model, 'object': 'model', 'created': 0, 'owned_by': 'mazal-image'}
                             for model in enabled_image_models()
                         ]})(scope, receive, send)
-                    if path not in ('/v1/images/generations', '/v1/images/edits'):
+                    if path not in ('/v1/images/generations', '/v1/images/edits', '/v1/images/generations/gif', '/v1/images/edits/gif'):
                         return await JSONResponse({'detail': {'error': '此引擎仅提供图片生成和编辑'}},
                             status_code=404)(scope, receive, send)
                 if path == '/api/customer-balance' and scope['method'] == 'GET':
@@ -610,7 +613,7 @@ async def serve_admin_asset(full_path: str):
     if full_path == 'favicon.ico':
         return RedirectResponse('/pwa-icon.svg', status_code=302)
     allowed = re.fullmatch(
-        r'(?:image|accounts|settings|logs|debug|image-manager|templates|login)'
+        r'(?:image|accounts|proxies|settings|logs|debug|image-manager|templates|login)'
         r'(?:/?|/index\.(?:html|txt)|/__next\.[A-Za-z0-9_.-]+(?:/__PAGE__)?\.txt)'
         r'|_next/static/[^\\\x00]+'
         r'|(?:openai|github)\.svg', full_path)

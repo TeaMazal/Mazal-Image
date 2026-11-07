@@ -16,3 +16,23 @@ def enabled_image_models():
 def customer_image_models(listing):
     offered = {item.get('id') for item in listing.get('data', []) if isinstance(item, dict)}
     return [model for model in enabled_image_models() if model in offered]
+
+
+def image25_route():
+    """Select one explicit transport; never retry on a different transport."""
+    from services.config import config
+    route = str(os.environ.get('MI_IMAGE25_ROUTE') or config.data.get('image25_route') or 'codex').strip().lower()
+    if route not in ('codex', 'web'):
+        raise ValueError('image25_route must be codex or web')
+    return route
+
+
+def validate_engine_image_model(model):
+    from services.config import config
+    from services.protocol.conversation import ImageGenerationError
+    from utils.helper import split_image_model
+    _, canonical = split_image_model(model)
+    if canonical == 'codex-gpt-image-2.5':
+        canonical = config.codex_image_model_25_name
+    if canonical in ('gpt-image-2.5-flare', 'gpt-image-2.5-sunburst') and canonical not in enabled_image_models():
+        raise ImageGenerationError('此图片模型尚未开放，请选择当前可用模型。', status_code=400)

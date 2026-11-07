@@ -5,6 +5,7 @@ import { Clock3, Download, EyeOff, LoaderCircle, RotateCcw, Sparkles, Trash2 } f
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toLocalImageUrl } from "@/lib/image-url";
 import type { ImageConversation, ImageTurnStatus, StoredImage, StoredReferenceImage } from "@/store/image-conversations";
 
 export type ImageLightboxItem = {
@@ -44,7 +45,7 @@ function getStoredImageSrc(image: StoredImage) {
     }
     return url;
   }
-  return image.url || "";
+  return toLocalImageUrl(image.url || "");
 }
 
 async function downloadStoredImage(image: StoredImage, index: number) {
@@ -58,7 +59,7 @@ async function downloadStoredImage(image: StoredImage, index: number) {
     } else if (image.url) {
       // 确保 URL 是绝对路径
       const url = image.url.startsWith("http") ? image.url : `${window.location.origin}${image.url}`;
-      const res = await fetch(url);
+      const res = await fetch(toLocalImageUrl(url));
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       }
@@ -177,6 +178,7 @@ export function ImageResults({
                       {turn.mode === "edit" ? "编辑图" : "文生图"}
                     </span>
                     <span>{getTurnStatusLabel(turn.status)}</span>
+                    <span>{turn.model}</span>
                     <span>{formatConversationTime(turn.createdAt)}</span>
                   </div>
                   <div className="text-right">{turn.prompt}</div>
@@ -336,6 +338,7 @@ export function ImageResults({
                                 <button
                                   type="button"
                                   onClick={() => void onRetryImage(selectedConversation.id, turn.id, image.id)}
+                                  title="使用当前选择的模型重新生成这一张"
                                   className="rounded-full bg-white px-2 py-1 text-[10px] font-medium text-rose-600 shadow-sm transition hover:bg-rose-100 sm:px-3 sm:text-xs"
                                 >
                                   重新生成这一张
@@ -418,6 +421,7 @@ export function ImageResults({
                     <button
                       type="button"
                       onClick={() => void onRegenerateTurn(selectedConversation.id, turn.id)}
+                      title="使用当前选择的模型全部重新生成"
                       className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 font-medium text-stone-500 transition hover:bg-stone-200 hover:text-stone-900"
                     >
                       <RotateCcw className="size-3" />

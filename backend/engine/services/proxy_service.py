@@ -39,6 +39,7 @@ def normalize_proxy_url(url: str) -> str:
 
 @dataclass(frozen=True)
 class ProxyRuntimeProfile:
+    proxy_id: str = ""
     proxy_url: str = ""
     proxy_source: str = "direct"
     resource: bool = False
@@ -175,6 +176,28 @@ class ProxySettingsStore:
         resource: bool = False,
         upstream: bool = False,
     ) -> ProxyRuntimeProfile:
+        from services.proxy_pool_service import account_route_key, proxy_pool
+
+        if not proxy_pool.is_enabled():
+            return self._legacy_profile(account=account, proxy=proxy, resource=resource, upstream=upstream)
+        selected = normalize_proxy_url(proxy)
+        source = "explicit" if selected else "direct"
+        proxy_id = ""
+        if not selected and proxy_pool.is_enabled():
+            bound = str((account or {}).get("proxy_id") or "")
+            if bound:
+                entry, source = proxy_pool.route_bound(bound, account_route_key(account))
+            elif account:
+                entry, source = proxy_pool.route_unbound(account_route_key(account))
+            else:
+                entry, source = proxy_pool.route_anonymous()
+            if entry is None:
+                raise RuntimeError("proxy pool is enabled but has no available egress")
+            selected, proxy_id = entry["url"], entry["id"]
+        return ProxyRuntimeProfile(proxy_url=selected, proxy_source=source,
+                                   resource=resource, proxy_id=proxy_id)
+
+    def _legacy_profile(self, account=None, proxy="", resource=False, upstream=False) -> ProxyRuntimeProfile:
         runtime = self._get_runtime_settings()
         clearance = dict(runtime.get("clearance") if isinstance(runtime.get("clearance"), dict) else {})
         runtime_enabled = bool(runtime.get("enabled"))
@@ -223,9 +246,11 @@ class ProxySettingsStore:
         proxy: str = "",
         resource: bool = False,
         upstream: bool = False,
+        target_url: str = "",
         **session_kwargs,
     ) -> dict[str, object]:
         profile = self.get_profile(account=account, proxy=proxy, resource=resource, upstream=upstream)
+        session_kwargs["trust_env"] = False
         if profile.proxy_url:
             session_kwargs["proxy"] = profile.proxy_url
         if profile.runtime_enabled and profile.skip_ssl_verify:

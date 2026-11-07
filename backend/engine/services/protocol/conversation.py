@@ -1,22 +1,26 @@
 from __future__ import annotations
 
 import base64
+import io
 import json
 import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Iterator
 
 import tiktoken
+from PIL import Image
 
 from services.account_service import account_service
 from services.config import config
 from services.image_storage_service import image_storage_service
 from services.openai_backend_api import ImageContentPolicyError, ImagePollTimeoutError, OpenAIBackendAPI
 from utils.helper import (
+    CODEX_IMAGE_MODEL_25,
     IMAGE_MODELS,
+    UpstreamHTTPError,
     extract_image_from_message_content,
     is_codex_image_model,
     is_supported_image_model,
@@ -24,6 +28,23 @@ from utils.helper import (
 )
 from utils.image_tokens import count_image_content_tokens
 from utils.log import logger
+
+
+IMAGE_MODEL_NOT_FOUND_COOLDOWN_SECS = 10 * 60
+
+
+def is_image_model_not_found_error(error: Exception | str) -> bool:
+    """仅匹配图片对话接口返回的精确 Model not found 404。"""
+    if not isinstance(error, UpstreamHTTPError):
+        return False
+    if error.status_code != 404:
+        return False
+    if error.context != "/backend-api/f/conversation":
+        return False
+    body = error.body
+    if not isinstance(body, dict):
+        return False
+    return body.get("detail") == "Model not found"
 
 
 class ImageGenerationError(Exception):
@@ -276,15 +297,27 @@ def format_image_result(
         if not b64_json:
             continue
         revised_prompt = str(item.get("revised_prompt") or prompt).strip() or prompt
+        image_bytes = base64.b64decode(b64_json)
+        try:
+            with Image.open(io.BytesIO(image_bytes)) as image:
+                mime_type = Image.MIME.get(image.format, "image/png")
+                animated = bool(getattr(image, "is_animated", False))
+        except Exception:
+            mime_type = "image/png"
+            animated = False
         if response_format == "b64_json":
             data.append({
                 "b64_json": b64_json,
-                "url": save_image_bytes(base64.b64decode(b64_json), base_url),
+                "url": save_image_bytes(image_bytes, base_url),
+                "mime_type": mime_type,
+                "animated": animated,
                 "revised_prompt": revised_prompt,
             })
         else:
             data.append({
-                "url": save_image_bytes(base64.b64decode(b64_json), base_url),
+                "url": save_image_bytes(image_bytes, base_url),
+                "mime_type": mime_type,
+                "animated": animated,
                 "revised_prompt": revised_prompt,
             })
     result: dict[str, Any] = {"created": created or int(time.time()), "data": data}
@@ -307,6 +340,7 @@ class ConversationRequest:
     base_url: str | None = None
     message_as_error: bool = False
     progress_callback: Any = None  # Callable[[str], None] | None
+    image_timeout_secs: float | None = None
 
 
 @dataclass
@@ -689,6 +723,7 @@ def conversation_events(
     size: str | None = None,
     quality: str = "auto",
     thinking_effort: str = "",
+    image_timeout_secs: float | None = None,
 ) -> Iterator[dict[str, Any]]:
     normalized = normalize_messages(messages or ([{"role": "user", "content": prompt}] if prompt else []))
     image_model = is_supported_image_model(model)
@@ -702,6 +737,7 @@ def conversation_events(
         images=images if image_model else None,
         system_hints=["picture_v2"] if image_model else None,
         thinking_effort=thinking_effort if not image_model else "",
+        image_timeout_secs=image_timeout_secs if image_model else None,
     )
     yield from iter_conversation_payloads(payloads, history_text, history_messages)
 
@@ -849,6 +885,7 @@ def stream_image_outputs(
             images=request.images or [],
             size=request.size,
             quality=request.quality,
+            image_timeout_secs=request.image_timeout_secs,
     ):
         last = event
         if event.get("type") == "conversation.delta":
@@ -959,7 +996,7 @@ def stream_image_outputs(
     # 当检测到文本回复（含 referenced_image_ids）时，使用更长的超时来轮询图片结果。
     # 因为上游可能将图片生成作为异步任务执行，SSE 流在工具完成前就断开了，
     # 导致对话文档中尚未写入图片工具的响应记录。
-    poll_timeout = config.image_poll_timeout_secs
+    poll_timeout = request.image_timeout_secs or config.image_poll_timeout_secs
     if is_text_reply and conversation_id:
         # 文本回复场景下图片可能仍在异步生成，使用更长超时（默认 120s → 额外 180s = 300s）
         poll_timeout = max(poll_timeout, 300)
@@ -1260,6 +1297,14 @@ def _codex_response_images(value: Any) -> list[str]:
     return []
 
 
+def codex_image_tool_model(model: object) -> str:
+    """把本地图片模型名映射为 Codex image_generation 工具模型名。"""
+    _, base_model = split_image_model(model)
+    if base_model == CODEX_IMAGE_MODEL_25:
+        return config.codex_image_model_25_name
+    return "gpt-image-2"
+
+
 def stream_codex_image_outputs(
         backend: OpenAIBackendAPI,
         request: ConversationRequest,
@@ -1271,6 +1316,7 @@ def stream_codex_image_outputs(
         images=request.images or [],
         size=request.size,
         quality=request.quality,
+        image_model=codex_image_tool_model(request.model),
     )))
     if not images:
         raise ImageGenerationError("No image result found in response")
@@ -1310,6 +1356,7 @@ def _generate_single_image(
     tls_retry_count = 0
     conn_timeout_retry_count = 0
     poll_timeout_retry_count = 0
+    model_not_found_retry_count = 0
     account_email = ""
 
     while True:
@@ -1488,6 +1535,12 @@ def _generate_single_image(
                 "error": last_error,
                 "index": index,
             })
+            if not emitted_for_token and is_image_model_not_found_error(exc):
+                # 仅本地暂避账号，不修改额度、有效性或代理健康状态。
+                account_service.sideline_image_account(token, IMAGE_MODEL_NOT_FOUND_COOLDOWN_SECS)
+                model_not_found_retry_count += 1
+                if model_not_found_retry_count <= MAX_POLL_TIMEOUT_RETRIES:
+                    continue
             if not emitted_for_token and is_token_invalid_error(last_error):
                 refreshed_token = account_service.refresh_access_token(token, force=True, event="image_stream")
                 if refreshed_token and refreshed_token != token:
@@ -1533,7 +1586,19 @@ def _generate_single_image(
 
 def stream_image_outputs_with_pool(request: ConversationRequest) -> Iterator[ImageOutput]:
     """并行生成多张图片，每张图片使用独立线程和账号，互不阻塞。"""
-    if split_image_model(request.model)[1] in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}:
+    model_mapping = config.data.get("image_model_mapping", {})
+    mapped_model = model_mapping.get(request.model) if isinstance(model_mapping, dict) else None
+    if isinstance(mapped_model, str) and mapped_model.strip() and mapped_model.strip() != request.model:
+        requested_model = request.model
+        request = replace(request, model=mapped_model.strip())
+        logger.info({
+            "event": "image_model_mapped",
+            "requested_model": requested_model,
+            "upstream_model": request.model,
+        })
+    from image_models import image25_route, validate_engine_image_model
+    validate_engine_image_model(request.model)
+    if split_image_model(request.model)[1] in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} and image25_route() != 'web':
         raise ImageGenerationError("此模型需通过 Images 生成或编辑接口调用。", status_code=400)
     if not is_supported_image_model(request.model):
         raise ImageGenerationError("unsupported image model,supported models: " + ", ".join(sorted(IMAGE_MODELS)))

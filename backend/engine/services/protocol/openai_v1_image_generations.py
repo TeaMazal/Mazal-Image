@@ -15,9 +15,12 @@ from utils.image_tokens import count_image_output_items_tokens, image_usage
 def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
     from utils.helper import split_image_model
     _, direct_model = split_image_model(body.get("model"))
+    from image_models import image25_route, validate_engine_image_model
+    validate_engine_image_model(body.get("model"))
     if direct_model in {"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"}:
-        from services.codex_images import handle as handle_codex_images
-        return handle_codex_images(body)
+        if image25_route() == 'codex':
+            from services.codex_images import handle as handle_codex_images
+            return handle_codex_images({**body, 'model': direct_model})
     prompt = str(body.get("prompt") or "")
     model = str(body.get("model") or "gpt-image-2")
     n = int(body.get("n") or 1)
@@ -36,6 +39,7 @@ def handle(body: dict[str, Any]) -> dict[str, Any] | Iterator[dict[str, Any]]:
         base_url=base_url,
         message_as_error=True,
         progress_callback=progress_callback,
+        image_timeout_secs=body.get("image_timeout_secs"),
     ))
     if body.get("stream"):
         return stream_image_chunks(outputs)
