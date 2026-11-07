@@ -1,5 +1,7 @@
 # 两站统一维护与发布
 
+2026-11-07 Souhub 后续已上线主站「绘图管理」r28，统一账号/分组/代理、管理测试、模板与存储入口，并修复 Base64 参考图编辑和独立清理服务的图片保护。后续优先核对 [r28 发布记录](DRAWING_MANAGEMENT_20261107.md) 与 `operations/drawing-management-current.json`，主站增量见 `integrations/drawing-management`。用户工作台前端未替换，新加坡 Mazal 未部署。
+
 2026-11-07 Souhub 已将绘图 Web 账号迁至 Sub2，绘图站通过 `MI_REMOTE_ACCOUNT_MANAGEMENT=1` 关闭旧池及本地直接生图。后续以 [统一账号上线记录](UNIFIED_ACCOUNTS_20261107.md) 和 `operations/unified-accounts-current.json` 为准；不要重新启用旧渠道 725。新加坡 Mazal 保留原行为，本次未同步部署。
 
 日常功能只修改这份项目的 frontend/、backend/。sites/mazal.json 和 sites/souhub.json 保存品牌、公开域名和部署布局；账号池、用户、价格、运行配置及 SSH 私钥仍留在各站服务器，不进入发布包。

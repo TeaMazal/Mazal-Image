@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "checks": {
+    "main_engine_cleanup_versions": true,
+    "shared_server_resources_and_networks": true,
+    "restart_configuration_persisted": true,
+    "all_management_read_endpoints": true,
+    "management_requires_admin": true,
+    "workbench_canvas_and_billing_bypass_protection": true,
+    "customer_login_models_quote_history_balance": true,
+    "existing_task_history_preserved": true,
+    "schema_and_existing_proxies_preserved": true,
+    "real_and_synthetic_billing_correct": true,
+    "deployed_engine_source_matches_reviewed_candidate": true
+  },
+  "main_image": "sha256:4980341766f5f78978845329c2ac678f5b85ec989ddc2cb5001694af7a6d18e5",
+  "engine_image": "sha256:57ac5d26b12b6d280c7ac9d0471c6ec2c74c389e8adb1de14c6cc504e1a303e7",
+  "enabled_models": [
+    "gpt-image-2"
+  ],
+  "production_users_charged_by_validation": false,
+  "real_images": 2,
+  "time": 1794041324.3276618,
+  "manual_oauth_login_verified": false
+}

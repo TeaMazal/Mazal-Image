@@ -107,6 +107,17 @@ def create_router(app_version: str) -> APIRouter:
     async def get_image_thumbnail(image_path: str):
         return get_thumbnail_response(image_path)
 
+    @router.post("/api/images/protection")
+    async def update_image_protection(body: dict, authorization: str | None = Header(default=None)):
+        require_admin(authorization)
+        from services import image_protection_service as protection
+        if not isinstance(body.get("protected"), bool) or not isinstance(body.get("path"), str):
+            raise HTTPException(status_code=400, detail="图片保护参数无效")
+        try:
+            return protection.set_protected(body["path"], body["protected"])
+        except ValueError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from None
+
     @router.post("/api/images/delete")
     async def delete_images_endpoint(body: ImageDeleteRequest, authorization: str | None = Header(default=None)):
         require_admin(authorization)

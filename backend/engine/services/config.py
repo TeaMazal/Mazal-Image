@@ -545,10 +545,12 @@ class ConfigStore:
         return path
 
     def cleanup_old_images(self) -> int:
+        from services import image_protection_service as protection
+        state = protection.snapshot(DATA_DIR)
         cutoff = time.time() - self.image_retention_days * 86400
         removed = 0
         for path in self.images_dir.rglob("*"):
-            if path.is_file() and path.stat().st_mtime < cutoff:
+            if path.is_file() and path.stat().st_mtime < cutoff and not protection.status(path.relative_to(self.images_dir).as_posix(), state)["protected"]:
                 path.unlink()
                 removed += 1
         for path in sorted((p for p in self.images_dir.rglob("*") if p.is_dir()), key=lambda p: len(p.parts), reverse=True):

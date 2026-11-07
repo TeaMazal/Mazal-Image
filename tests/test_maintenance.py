@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[1] / 'backend/maintenance.py'
+sys.path.insert(0, str(source.parent / 'engine'))
 if __name__ == '__main__' and len(sys.argv) > 1 and sys.argv[1].endswith('.py'):
     source = Path(sys.argv.pop(1))
 spec = importlib.util.spec_from_file_location('maintenance', source)

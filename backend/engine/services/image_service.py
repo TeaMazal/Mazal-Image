@@ -1,4 +1,5 @@
 from __future__ import annotations
+from services import image_protection_service as protection
 
 import io
 import mimetypes
@@ -151,12 +152,13 @@ def cleanup_image_thumbnails() -> int:
     return removed
 
 def list_images(base_url: str, start_date: str = "", end_date: str = "") -> dict[str, object]:
-    config.cleanup_old_images()
-    cleanup_image_thumbnails()
+    # Browsing the manager is read-only; cleanup belongs to explicit maintenance.
+    protection_state = protection.snapshot()
     all_tags = load_tags()
     items = [
         {
             **item,
+            **protection.status(str(item["path"]), protection_state),
             "url": str(item.get("url") or f"{base_url.rstrip('/')}/images/{item['path']}"),
             "thumbnail_url": thumbnail_url(base_url, str(item["path"])),
             "tags": all_tags.get(str(item["path"]), []),
@@ -176,7 +178,12 @@ def delete_images(paths: list[str] | None = None, start_date: str = "", end_date
         for item in image_storage_service.list_items("", start_date=start_date, end_date=end_date)
     ] if all_matching else (paths or [])
     removed = 0
+    skipped_protected = 0
+    protection_state = protection.snapshot()
     for item in targets:
+        if protection.status(item, protection_state)["protected"]:
+            skipped_protected += 1
+            continue
         path = (root / item).resolve()
         try:
             path.relative_to(root)
@@ -190,7 +197,7 @@ def delete_images(paths: list[str] | None = None, start_date: str = "", end_date
         remove_tags(item)
     _cleanup_empty_dirs(root)
     _cleanup_empty_dirs(config.image_thumbnails_dir)
-    return {"removed": removed}
+    return {"removed": removed, "skipped_protected": skipped_protected}
 
 
 def download_images_zip(paths: list[str]) -> io.BytesIO:
@@ -280,13 +287,15 @@ def compress_images(quality: int = 60) -> dict:
 def delete_to_target(target_free_mb: int, dry_run: bool = False) -> dict:
     """删除最旧的图片直到剩余空间达到 target_free_mb"""
     import shutil
+    protection_state = protection.snapshot()
+    if target_free_mb < 1:raise HTTPException(status_code=400, detail="目标可用空间必须大于零")
     usage = shutil.disk_usage(config.images_dir)
     current_free = usage.free // (1024 * 1024)
     if current_free >= target_free_mb and not dry_run:
         return {"removed": 0, "current_free_mb": current_free, "target_free_mb": target_free_mb, "done": True}
 
     files = sorted(
-        (p for p in config.images_dir.rglob("*.png") if p.is_file()),
+        (p for p in config.images_dir.rglob("*.png") if p.is_file() and not protection.status(p.relative_to(config.images_dir).as_posix(), protection_state)["protected"]),
         key=lambda p: p.stat().st_mtime,
     )
     removed = 0

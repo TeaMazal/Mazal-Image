@@ -22,11 +22,19 @@ MIN_FREE = max(32, int(os.environ.get('MI_MIN_FREE_MB', '512'))) * 1024**2
 
 
 def media_files():
+    from services import image_protection_service as protection
+    state = protection.snapshot(ROOT / "data")
     result = []
     for folder in ('images', 'image_thumbnails', 'files'):
         path = ROOT / 'data' / folder
         if path.exists():
-            result.extend(p for p in path.rglob('*') if p.is_file() and not p.is_symlink())
+            for p in path.rglob('*'):
+                if not p.is_file() or p.is_symlink():continue
+                if folder in ('images','image_thumbnails'):
+                    relative=p.relative_to(path).as_posix()
+                    if folder=='image_thumbnails' and relative.endswith('.png'):relative=relative[:-4]
+                    if protection.status(relative,state)['protected']:continue
+                result.append(p)
     return result
 
 
@@ -81,7 +89,7 @@ def backup():
     temporary = BACKUPS / ('.pending-' + stamp + '.tar.gz')
     try:
         sources = [ROOT / 'config.json'] + [ROOT / 'data' / name for name in
-            ('accounts.db', 'accounts.json', 'auth_keys.json', 'sub2api_config.json', 'cpa_config.json')]
+            ('accounts.db', 'accounts.json', 'auth_keys.json', 'sub2api_config.json', 'cpa_config.json', 'drawing-media-protection.json', 'template-library.json')]
         if any(p.is_symlink() for p in sources) or sum(p.stat().st_size for p in sources if p.is_file()) > BACKUP_LIMIT:
             print('Configuration backup skipped: sources exceed backup limit or contain symlinks', flush=True)
             return
@@ -96,7 +104,7 @@ def backup():
                             a.backup(b)
                             if b.execute('PRAGMA quick_check').fetchone()[0] != 'ok':
                                 raise RuntimeError('Account database integrity check failed')
-            for name in ('accounts.json', 'auth_keys.json', 'sub2api_config.json', 'cpa_config.json'):
+            for name in ('accounts.json', 'auth_keys.json', 'sub2api_config.json', 'cpa_config.json', 'drawing-media-protection.json', 'template-library.json'):
                 source = ROOT / 'data' / name
                 if source.exists() and not source.is_symlink():
                     shutil.copyfile(source, stage / name)

@@ -620,6 +620,11 @@ class BackupService:
         buffer = io.BytesIO()
         with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
             self._add_bytes_to_archive(archive, "backup-metadata.json", _json_bytes(metadata))
+            # These small metadata files belong to the retained drawing service.
+            # Always preserve template definitions and protection decisions.
+            for filename in ("drawing-media-protection.json", "template-library.json"):
+                self._add_file_to_archive(archive, DATA_DIR / filename, "data/" + filename)
+            self._add_directory_to_archive(archive, DATA_DIR / "template-media", "data/template-media")
             if include.get("config"):
                 self._add_file_to_archive(archive, CONFIG_FILE, "config.json")
             if include.get("cpa"):

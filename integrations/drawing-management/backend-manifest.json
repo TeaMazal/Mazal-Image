@@ -1,0 +1,146 @@
+{
+  "internal/repository/drawing_maintenance.go": {
+    "before": null,
+    "after": "58b9a99008c5f167fa6e0b0695454a9f5f073423ac60e5403f8ecd48f46bd7a1"
+  },
+  "internal/service/account_usage_service.go": {
+    "before": "90a812f0065d5f57251ee41279f550044baf52b429fa72cfbaf94c6d7344514e",
+    "after": "845f8bbc4c953c2452a000b56f74617303b5c374d5a7677e0ecdc7460f7e7011"
+  },
+  "internal/service/admin_account.go": {
+    "before": "b2975fdb724a15d34bb08a95939e49f87bb11c9bd4712e4a8137c2152b878f99",
+    "after": "f25756c5f360cef9b84290f12f6758730595ec667016ecc611526915bc22e6d3"
+  },
+  "internal/service/admin_proxy.go": {
+    "before": "aedb7a2dbccb00b2e63c778e7842bfc1bb36d2bba82790d1d512892df08c7b09",
+    "after": "57f04a9bbc05d077c42d6274df55017cdef2cfa112c38189af3f258880eb34bd"
+  },
+  "internal/service/admin_service.go": {
+    "before": "13b472b3186c1b1f06bcdab3bd6ec746c5e7beda802e11879f743c042e02488a",
+    "after": "cf9f2eb790e99b662a5d140f618bef77cd637b3547e7154ebd5ad57889edbace"
+  },
+  "internal/service/drawing_auth_import.go": {
+    "before": null,
+    "after": "ea38b4969e2c14c35786088f72ee5946066fa75997db5e02539847c7e2e6406f"
+  },
+  "internal/service/drawing_auth_import_test.go": {
+    "before": null,
+    "after": "0b1237b81abff1248c851d44d248979ba734e32868c600133c4ea0988e6f4db6"
+  },
+  "internal/service/drawing_generation.go": {
+    "before": null,
+    "after": "c15dbf6adbb08be6154e48e4d82cb997010d29ea00b0bf76b7f7c5915e2eb4b1"
+  },
+  "internal/service/drawing_maintenance.go": {
+    "before": null,
+    "after": "534a35b056ab89531aa02ea03555313899468e1802b9f0a3bc4c9f484b4c0d4b"
+  },
+  "internal/service/drawing_models.go": {
+    "before": null,
+    "after": "f163ab80f5dec0464f9d491fe20c9d539f2242687ff9a79d357b27b968ca1e95"
+  },
+  "internal/service/drawing_proxy.go": {
+    "before": null,
+    "after": "4205f69516f1033650cac1af6a5f9efe3ce3d76e2b79182e81f5ed11957096e2"
+  },
+  "internal/service/drawing_proxy_manager.go": {
+    "before": null,
+    "after": "7d16da5c1ffbe9949f29e6449600e01fb02bb94e4539906d0737e8c790214bac"
+  },
+  "internal/service/drawing_proxy_test.go": {
+    "before": null,
+    "after": "6e53748775681638f129443458271b77c7f9b54c9895d16414fefb3a2d405a1b"
+  },
+  "internal/service/drawing_reference_test.go": {
+    "before": null,
+    "after": "d6b05b64144ca4d3de001166c89fb000fb0992e39e5c7e2f445b61d8fd0056fe"
+  },
+  "internal/service/drawing_runtime.go": {
+    "before": null,
+    "after": "374e9ce690409ea6f3c516b521161fc4f45e5b4bb84ef2d0d62a35c24105eb23"
+  },
+  "internal/service/openai_images.go": {
+    "before": "bf20ff4cc5b3faf22356bc6f1dedacc0b3f1fc2ef877f8f95a11f70051a1f659",
+    "after": "a2ce271f6623e30bdd51d007c0259611f68570b51ae50abd173d06d592483d70"
+  },
+  "internal/service/openai_images_web.go": {
+    "before": "12c992e7fb562f8b13750534ae2dd32f68ea3766a1bec42cd52002765fdb9697",
+    "after": "585b39f933b82cfa4aed6e8134ca3c2d630855943c19c9409c9e69abf8a544af"
+  },
+  "internal/service/openai_oauth_service.go": {
+    "before": "a943a36b1a625522db162e39dd5ade69a3b2c03b9439065b163d05a643db759d",
+    "after": "61b76675470781c36943eabf343282e163cb571b7873798b43bc8dfe4ced21ef"
+  },
+  "internal/service/openai_web_usage.go": {
+    "before": "b37ea3134a11281dd2484265e59549220475f146a4b2c60eb120d3dec8b65eed",
+    "after": "2d67ecddb2be1100f8add5b60d63d94606ed31f4ce9b60423f5424fd8ee65562"
+  },
+  "internal/handler/admin/drawing_accounts.go": {
+    "before": null,
+    "after": "9013a779896fd99a773c53205727160343891407e61ec0f6e76afdb5dd3d1202"
+  },
+  "internal/handler/admin/drawing_engine.go": {
+    "before": null,
+    "after": "4d13c18be39d319e0605090cfbfd877036c70ea5460b7c559ee21aff55daac19"
+  },
+  "internal/handler/admin/drawing_engine_test.go": {
+    "before": null,
+    "after": "ee7f84600b5a5ae68194230fbd47801d39cda73f371548fb5476433da04e9be2"
+  },
+  "internal/handler/admin/drawing_maintenance.go": {
+    "before": null,
+    "after": "10c98a813f6961a845c2e23db10997879605b4d0e6192f8956aeead46e009fe1"
+  },
+  "internal/handler/admin/drawing_models.go": {
+    "before": null,
+    "after": "e2ca104058d26de28ffcb87cdb85d4ae319468a5e015d006e8ee06a970ed7623"
+  },
+  "internal/handler/admin/drawing_oauth.go": {
+    "before": null,
+    "after": "f613c81dd19550e4eb194ab9bbe4a7f93e3519f7281dd2198f51eb7b26c40f18"
+  },
+  "internal/handler/admin/drawing_oauth_test.go": {
+    "before": null,
+    "after": "835963fc9f831be05744f61434d8bfeafa248c9cc1a194a6a0cb015d8b5c5283"
+  },
+  "internal/handler/admin/drawing_proxies.go": {
+    "before": null,
+    "after": "ec76b14b82e88cb751cddd5930d1fab8d29b839a48b410af2300082a43ea0c5d"
+  },
+  "internal/handler/admin/drawing_runtime.go": {
+    "before": null,
+    "after": "6d3073ac1e5df81e3dd61b4141da46344ad5ab4906c707c6719d5d7a3b36d15e"
+  },
+  "internal/handler/admin/drawing_test_jobs.go": {
+    "before": null,
+    "after": "1a79422e665f23cede677560db643c7d37afd34c40e8c1b1322d711bfa5efb9e"
+  },
+  "internal/server/middleware/audit_log.go": {
+    "before": "3d481edb59d541604e75fdf44f0346bd6b053c9c08d7dee938296b60655dc9ae",
+    "after": "982d023a0defc131f532f55a0aba4123da4b72905fa9ca7e3933e794342d0c2c"
+  },
+  "internal/server/routes/admin.go": {
+    "before": "78d590d4d62a99e21d22d3f0f9ed821fb151cfbb2b355b7eac2a59c278c3b230",
+    "after": "2be3ad04bb757867fa1ce509e49809ece45590e537d41cd5c2c04c1e4c2f9526"
+  },
+  "resources/chatgpt_web/drawing_oauth_exchange.py": {
+    "before": null,
+    "after": "5da8fa7c23307e2dfd95f0f09230e4082dc9db9aaf98a16888bf8c2336dea187"
+  },
+  "resources/chatgpt_web/parse_drawing_subscription.py": {
+    "before": null,
+    "after": "8039b4976e984b22106308b9cce5e68aaf270849fd4fbb81c0e69946b1952e19"
+  },
+  "resources/chatgpt_web/worker.py": {
+    "before": "2ce8857209fedf115ada698ce524817cc1c14010e3f87bdb483a761f02f5e961",
+    "after": "5f5293977831e05219e532f58e1caa5a4f64b6c563fd8609b48f60db25563eb1"
+  },
+  "resources/chatgpt_web/services/openai_oauth.py": {
+    "before": null,
+    "after": "bddf107fca32ee413afa3fc3d2c37e957ce138c27e028ff1b11aaff003726482"
+  },
+  "resources/chatgpt_web/services/proxy_subscription_parser.py": {
+    "before": null,
+    "after": "e48546f6cd2fef894b47c3cb9e386331742428c8eef069ec88588180a1241916"
+  }
+}

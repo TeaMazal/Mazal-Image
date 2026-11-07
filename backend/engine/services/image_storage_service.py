@@ -205,7 +205,7 @@ class ImageStorageService:
             extension = "png"
         if extension == "jpeg":
             extension = "jpg"
-        filename = f"{int(time.time())}_{file_hash}.{extension}"
+        filename = f"{time.time_ns()}_{file_hash}.{extension}"
         relative_dir = Path(time.strftime("%Y"), time.strftime("%m"), time.strftime("%d"))
         return f"{relative_dir.as_posix()}/{filename}"
 

@@ -410,12 +410,12 @@ class CustomerGateway:
         path = scope.get('path', '')
         if REMOTE_ACCOUNT_MANAGEMENT:
             if path.rstrip('/') in ('/accounts', '/proxies') and scope['method'] in ('GET', 'HEAD'):
-                destination = '/admin/proxies' if path.rstrip('/') == '/proxies' else '/admin/accounts'
+                destination = '/admin/drawing/proxies' if path.rstrip('/') == '/proxies' else '/admin/drawing/accounts'
                 return await RedirectResponse(MAIN_ORIGIN + destination, status_code=307,
                     headers={'Cache-Control': 'no-store'})(scope, receive, send)
             if path.startswith(('/api/accounts', '/api/cpa/', '/api/sub2api/', '/api/proxy/')):
                 return await JSONResponse({'detail': {'error': '账号和代理已统一到主站管理',
-                    'management_url': MAIN_ORIGIN + '/admin/accounts'}}, status_code=410,
+                    'management_url': MAIN_ORIGIN + '/admin/drawing/accounts'}}, status_code=410,
                     headers={'Cache-Control': 'no-store'})(scope, receive, send)
         if path in ('/site-config.js', '/manifest.webmanifest'):
             if scope['method'] not in ('GET', 'HEAD'):
