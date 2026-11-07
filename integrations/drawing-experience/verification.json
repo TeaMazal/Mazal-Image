@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "services": {
+    "sub2api-souhub-drawing-review-r30": {
+      "running": true,
+      "image_matches": true
+    },
+    "mazal-image-backend-1": {
+      "running": true,
+      "image_matches": true
+    },
+    "mazal-image-web-1": {
+      "running": true,
+      "image_matches": true
+    },
+    "mazal-image-maintenance-1": {
+      "running": true,
+      "image_matches": true
+    },
+    "souhub-drawing-proxy-core-r28": {
+      "running": true,
+      "image_matches": true
+    }
+  },
+  "customer_session_balance_pricing_history": true,
+  "canvas_accessible": true,
+  "task_history_preserved": true,
+  "production_generation_requests_for_validation": 0,
+  "time": 1794060481.8451698,
+  "historical_backfill": {
+    "imported": 1,
+    "billing_uniquely_matched": 1,
+    "upstream_requests": 0
+  }
+}

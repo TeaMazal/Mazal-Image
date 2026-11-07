@@ -1,0 +1,34 @@
+{
+  "internal/server/routes/gateway.go": {
+    "before": "65b3c3e510a2082f44bf93e0ee91dd07dfab335858c1eb11e58faf4de946d3b0",
+    "after": "3e917e0f088c5e3b4c9d19d784b626918ab6e9bd93a80d40cf319bbe90ae6881"
+  },
+  "internal/server/routes/admin.go": {
+    "before": "2be3ad04bb757867fa1ce509e49809ece45590e537d41cd5c2c04c1e4c2f9526",
+    "after": "7a7bcd5d2650aa010b582dac781eed44fa3cf5e105959e284ea25777970f7688"
+  },
+  "internal/pkg/drawingrecord/store.go": {
+    "before": null,
+    "after": "3522aa0aaff0bfc03abc507f271153c22d37c50df2ac2584e2ab2c600936cb0f"
+  },
+  "internal/pkg/drawingrecord/store_test.go": {
+    "before": null,
+    "after": "62f785f222b28a4be4bda3a1917df4076b1318a481e4b7394e7b8c974d8cefa0"
+  },
+  "internal/handler/drawing_capture.go": {
+    "before": null,
+    "after": "611d583c6305437f6f23e5d7a26f8620e1af253f5e59f85a1c1031e26c7b3f3f"
+  },
+  "internal/handler/drawing_capture_test.go": {
+    "before": null,
+    "after": "6dde329c433cec683707f9dbe99cbe72aa0f8298a279de2734939e10d7fa641f"
+  },
+  "internal/handler/admin/drawing_records.go": {
+    "before": null,
+    "after": "f80e56de82ac34f06b5b8bd1ab811ea17ec152b9d4e66fe537ab0efc91c6c2cf"
+  },
+  "internal/handler/openai_images.go": {
+    "before": "5a4616626ebc8009c2ee12689c082cdf2c152495d278390739b9859d94c4fc0f",
+    "after": "89117741a082c1f44da1c3a46762d7666d42040fae55ef517b1bfe332c882920"
+  }
+}

@@ -1,5 +1,7 @@
 # 两站统一维护与发布
 
+2026-11-07 Souhub 最新上线主站绘图体验 r30、绘图网关与工作台 r29：新增用户生成记录、私密图片预览与真实账单关联，完善侧边详情、筛选保留及多图轮次归组。后续优先核对 [体验与作品归档发布记录](DRAWING_EXPERIENCE_20261107.md)、`integrations/drawing-experience` 和 `operations/drawing-management-current.json`。新归档目录与旧存储清理分开，本轮无额外付费生图；新加坡 Mazal 未部署。
+
 2026-11-07 Souhub 后续已上线主站「绘图管理」r28，统一账号/分组/代理、管理测试、模板与存储入口，并修复 Base64 参考图编辑和独立清理服务的图片保护。后续优先核对 [r28 发布记录](DRAWING_MANAGEMENT_20261107.md) 与 `operations/drawing-management-current.json`，主站增量见 `integrations/drawing-management`。用户工作台前端未替换，新加坡 Mazal 未部署。
 
 2026-11-07 Souhub 已将绘图 Web 账号迁至 Sub2，绘图站通过 `MI_REMOTE_ACCOUNT_MANAGEMENT=1` 关闭旧池及本地直接生图。后续以 [统一账号上线记录](UNIFIED_ACCOUNTS_20261107.md) 和 `operations/unified-accounts-current.json` 为准；不要重新启用旧渠道 725。新加坡 Mazal 保留原行为，本次未同步部署。

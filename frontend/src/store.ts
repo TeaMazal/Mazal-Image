@@ -3937,6 +3937,9 @@ async function executeTask(taskId: string) {
     const result = await callImageApi({
       settings: requestSettings,
       clientTaskId: `${task.id}-${task.startedAt ?? task.createdAt}`,
+      drawingRoundId: task.studioRoundId ?? task.agentRoundId,
+      drawingConversationId: task.studioConversationId ?? task.agentConversationId,
+      drawingRoundTotal: task.studioRoundTotal,
       prompt: replaceImageMentionsForApi(requestPrompt, inputDataUrls.length),
       params: task.params,
       nativeTransparentBackground: task.params.transparent_output && !task.transparentOutput,

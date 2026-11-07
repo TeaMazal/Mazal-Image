@@ -81,10 +81,13 @@ def error_message(payload, fallback='主站请求失败'):
     return fallback
 
 
-def gateway_request(path, token, client_ip, *, data=None, content_type=None, timeout=12):
+def gateway_request(path, token, client_ip, *, data=None, content_type=None, timeout=12, drawing_headers=None):
     headers = {'Authorization': 'Bearer ' + token,
                'X-Real-IP': client_ip, 'X-Forwarded-For': client_ip,
                'Accept': 'application/json'}
+    for name, value in (drawing_headers or {}).items():
+        if name in ('X-Drawing-Round-Id', 'X-Drawing-Conversation-Id', 'X-Drawing-Round-Total') and isinstance(value, str) and len(value) <= 128 and all(32 <= ord(c) < 127 for c in value):
+            headers[name] = value
     if content_type:
         headers['Content-Type'] = content_type
     request = urllib.request.Request(GATEWAY + path, data=data, headers=headers)
@@ -318,8 +321,9 @@ def image_request(payload, identity, mode):
                            if payload.get(k) is not None}).encode()
         content_type = 'application/json'
         path = '/v1/images/generations'
+    options = {'drawing_headers': identity['_drawing_headers']} if identity.get('_drawing_headers') else {}
     return gateway_request(path, token, client_ip, data=data,
-                           content_type=content_type, timeout=600)
+                           content_type=content_type, timeout=600, **options)
 
 
 ORIGINAL_RUN = ImageTaskService._run_task
@@ -589,6 +593,9 @@ class CustomerGateway:
                         headers={'Cache-Control': 'no-store'})(scope, receive, send)
                 identity = customer_identity(token)
                 identity.update(_gateway_token=token, _gateway_client_ip=client_ip)
+                names = {b'x-drawing-round-id': 'X-Drawing-Round-Id', b'x-drawing-conversation-id': 'X-Drawing-Conversation-Id', b'x-drawing-round-total': 'X-Drawing-Round-Total'}
+                identity['_drawing_headers'] = {names[k.lower()]: v.decode('ascii', 'ignore')[:128] for k, v in scope.get('headers', []) if k.lower() in names}
+
                 context['identity'] = identity
         elif path == '/api/customer-balance':
             return await JSONResponse({'detail': {'error': '请先登录'}}, status_code=401,

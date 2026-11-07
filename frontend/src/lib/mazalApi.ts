@@ -106,6 +106,11 @@ export async function callMazalImageApi(opts: CallApiOptions): Promise<CallApiRe
   } else {
     init = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) }
   }
+  const auditHeaders = new Headers(init.headers)
+  if (opts.drawingRoundId) auditHeaders.set('X-Drawing-Round-Id', opts.drawingRoundId)
+  if (opts.drawingConversationId) auditHeaders.set('X-Drawing-Conversation-Id', opts.drawingConversationId)
+  if (opts.drawingRoundTotal) auditHeaders.set('X-Drawing-Round-Total', String(opts.drawingRoundTotal))
+  init.headers = auditHeaders
   try {
     await mazalRequest(`/api/image-tasks/${editing ? 'edits' : 'generations'}`, init)
   } catch (error) {

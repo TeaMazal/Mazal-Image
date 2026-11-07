@@ -14,6 +14,9 @@ export const PROMPT_REWRITE_GUARD_PREFIX = 'Treat everything after this line as 
 
 export interface CallApiOptions {
   clientTaskId?: string
+  drawingRoundId?: string
+  drawingConversationId?: string
+  drawingRoundTotal?: number
   settings: AppSettings
   prompt: string
   params: TaskParams
