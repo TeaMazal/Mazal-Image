@@ -54,6 +54,29 @@ describe('Mazal 任务适配', () => {
     expect(enqueued).not.toHaveBeenCalled()
   })
 
+  it('拒绝未验证的编辑模型，提交前不建立任务', async () => {
+    saveMazalSession('sk-isolated-test', { ...session, edit_models: [] }, false)
+    const fetcher = vi.fn(); const enqueued = vi.fn()
+    vi.stubGlobal('fetch', fetcher)
+    await expect(callMazalImageApi({ ...opts, inputImageDataUrls: ['data:image/png;base64,YQ=='], onCustomTaskEnqueued: enqueued })).rejects.toThrow('编辑验证')
+    expect(fetcher).not.toHaveBeenCalled(); expect(enqueued).not.toHaveBeenCalled()
+  })
+  it('请求保留轮次和对话标识，并使用当前用户密钥', async () => {
+    const fetcher = vi.fn(async (_path: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        const headers = new Headers(init.headers)
+        expect(headers.get('X-Drawing-Round-Id')).toBe('round-one')
+        expect(headers.get('X-Drawing-Conversation-Id')).toBe('conversation-one')
+        expect(headers.get('X-Drawing-Round-Total')).toBe('3')
+        expect(headers.get('Authorization')).toBe('Bearer sk-isolated-test')
+        return json({ id: opts.clientTaskId })
+      }
+      return json({ items: [{ id: opts.clientTaskId, status: 'success', data: [{ b64_json: 'cG5n' }] }] })
+    })
+    vi.stubGlobal('fetch', fetcher)
+    await callMazalImageApi({ ...opts, drawingRoundId: 'round-one', drawingConversationId: 'conversation-one', drawingRoundTotal: 3 })
+  })
+
   it('提交响应丢失后只查询原编号，等待任务入队，不重复 POST', async () => {
     vi.useFakeTimers()
     let queries = 0

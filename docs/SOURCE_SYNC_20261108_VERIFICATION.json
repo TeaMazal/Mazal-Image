@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-08",
+  "scope": ["drawing-workbench-r32", "drawing-gateway-r32", "main-model-integration-r32", "main-web-account-label-r33"],
+  "excluded": ["authorization-upload-r34", "upload-management-service", "production-credentials", "account-data", "databases"],
+  "source_comparison": {
+    "frontend_src_with_canvas_overrides": "all matched after newline normalization",
+    "backend_python": "all matched after newline normalization",
+    "intentional_site_differences": ["service worker cache prefix", "two PWA icons", "three legacy admin branding or help files"],
+    "main_backend_manifest_files": 20,
+    "main_backend_current_sha256_matches": 20,
+    "main_backend_git_index_patch_replay_matches": 20,
+    "web_label_reproduced_assets": 2,
+    "web_label_byte_exact_matches": 2
+  },
+  "validation": {
+    "frontend_build": "passed",
+    "frontend_test_files": 78,
+    "frontend_tests_passed": 952,
+    "frontend_test_workers": 2,
+    "embedded_workbench_tests_passed": 5,
+    "backend_tests_passed": 107,
+    "backend_environment": "isolated Linux container with no external network and read-only source mount",
+    "web_label_javascript_syntax": "passed",
+    "source_archive_secret_scan": "passed; no findings after replacing an upstream example-token placeholder"
+  },
+  "paid_image_requests_in_this_sync": 0,
+  "production_services_modified_in_this_sync": false,
+  "notes": [
+    "Windows backend test attempt could not import yaml and Linux fcntl; all seven modules passed in the isolated Linux test environment.",
+    "Real image and ledger verification belongs to the earlier r32 deployment and is documented separately.",
+    "This is a main-branch source synchronization, not a new release tag or an installer version update."
+  ]
+}

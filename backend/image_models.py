@@ -1,11 +1,7 @@
 """Models implemented by the workbench; exposure requires an explicit release decision."""
 import os
 
-IMAGE_MODEL_NAMES = {
-    'gpt-image-2': 'GPT Image 2',
-    'gpt-image-2.5-flare': 'GPT Image 2.5 Flare',
-    'gpt-image-2.5-sunburst': 'GPT Image 2.5 Sunburst',
-}
+IMAGE_MODEL_NAMES = {'gpt-image-2': 'GPT Image 2', 'gpt-image-2.5-flare': 'GPT Image 2.5-Flare', 'gpt-image-2.5-sunburst': 'GPT Image 2.5-Sunburst', 'gpt-image-2.5': 'GPT Image 2.5', 'gpt-image-2.6-flare': 'GPT Image 2.6-Flare', 'gpt-image-2.6-sunburst': 'GPT Image 2.6-Sunburst', 'gpt-image-2.6': 'GPT Image 2.6'}
 
 
 def enabled_image_models():
@@ -34,5 +30,5 @@ def validate_engine_image_model(model):
     _, canonical = split_image_model(model)
     if canonical == 'codex-gpt-image-2.5':
         canonical = config.codex_image_model_25_name
-    if canonical in ('gpt-image-2.5-flare', 'gpt-image-2.5-sunburst') and canonical not in enabled_image_models():
+    if canonical in IMAGE_MODEL_NAMES and canonical != 'gpt-image-2' and canonical not in enabled_image_models():
         raise ImageGenerationError('此图片模型尚未开放，请选择当前可用模型。', status_code=400)

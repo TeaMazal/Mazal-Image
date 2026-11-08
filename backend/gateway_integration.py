@@ -102,7 +102,10 @@ def gateway_request(path, token, client_ip, *, data=None, content_type=None, tim
             payload = {}
         raise HTTPException(error.code, detail={'error': error_message(payload)}) from None
     except (urllib.error.URLError, TimeoutError, OSError, ValueError):
-        raise HTTPException(503, detail={'error': '主站暂时无法连接，请稍后重试'}) from None
+        detail = {'error': '主站连接中断，结果待核对；请查询原任务和账单，未自动重新提交' if data is not None else '主站暂时无法连接，请稍后重试'}
+        if data is not None:
+            detail['code'] = 'result_unconfirmed'
+        raise HTTPException(503, detail=detail) from None
 
 
 def local_identity(token):
@@ -164,7 +167,7 @@ async def proxy_gateway(scope, receive, send, token):
 async def proxy_validated_gateway(scope, receive, send, token):
     if scope['path'] == '/v1/models' and scope['method'] in ('GET', 'HEAD'):
         try:
-            listing = await asyncio.to_thread(gateway_request, '/v1/models', token, str((scope.get('client') or ('', 0))[0]))
+            listing = await asyncio.to_thread(gateway_request, '/v1/models?image_only=true', token, str((scope.get('client') or ('', 0))[0]))
         except HTTPException as error:
             return await JSONResponse({'error': {'message': error_message(error.detail)}}, status_code=error.status_code)(scope, receive, send)
         models = customer_image_models(listing)
@@ -386,7 +389,8 @@ def run_task(self, key, mode, payload, identity, model):
     except Exception as error:
         detail = error.detail if isinstance(error, HTTPException) else str(error)
         message = error_message(detail, str(detail)[:400])
-        self._update_task(key, status='error', error=message, data=[],
+        uncertain = not isinstance(error, HTTPException) or error.status_code >= 500 or isinstance(detail, dict) and detail.get('code') == 'result_unconfirmed'
+        self._update_task(key, status='error', error=message, error_code='result_unconfirmed' if uncertain else 'request_rejected', result_state='unconfirmed' if uncertain else 'failed', data=[],
                           duration_ms=int((time.time()-started)*1000),
                           http_status=error.status_code if isinstance(error, HTTPException) else 502)
         self._log_call(identity, mode, model, started, '调用失败', status='failed', error=message)
@@ -539,15 +543,18 @@ class CustomerGateway:
                     headers={'Cache-Control': 'no-store'})(scope, receive, send)
             notice = ''
             models = []
+            edit_models = []
             try:
-                listing = await asyncio.to_thread(gateway_request, '/v1/models', token, client_ip)
+                listing = await asyncio.to_thread(gateway_request, '/v1/models?image_only=true', token, client_ip)
                 models = customer_image_models(listing)
+                edit_listing = await asyncio.to_thread(gateway_request, '/v1/models?image_only=true&operation=edit', token, client_ip)
+                edit_models = customer_image_models(edit_listing)
                 if not models:
                     notice = '当前密钥没有可用的绘图模型，请联系管理员检查分组和模型权限。'
             except HTTPException as error:
                 notice = error_message(error.detail)
             return await JSONResponse({'role': 'user', 'subject_id': customer_identity(token)['id'],
-                'balance': customer_balance(usage), 'models': models,
+                'balance': customer_balance(usage), 'models': models, 'edit_models': edit_models,
                 'image_model_catalog': [{'id': model, 'name': name, 'available': model in models}
                                         for model, name in IMAGE_MODEL_NAMES.items()], 'notice': notice},
                 headers={'Cache-Control': 'no-store'})(scope, receive, send)
@@ -583,7 +590,7 @@ class CustomerGateway:
             elif path == '/auth/login' or path.startswith('/api/'):
                 client_ip = str((scope.get('client') or ('', 0))[0])
                 read_only_task_poll = path in ('/api/image-tasks', '/api/customer-balance') and scope['method'] == 'GET'
-                validation_path = '/v1/usage' if read_only_task_poll else '/v1/models'
+                validation_path = '/v1/usage' if read_only_task_poll else '/v1/models?image_only=true'
                 try:
                     validation = await asyncio.to_thread(gateway_request, validation_path, token, client_ip)
                 except HTTPException as error:

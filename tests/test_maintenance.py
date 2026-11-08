@@ -31,7 +31,8 @@ class MaintenanceTests(unittest.TestCase):
             os.utime(oldest, (time.time()-60, time.time()-60))
             database = root / 'data/accounts.db'
             database.write_text('must remain')
-            with patch.object(module, 'ROOT', root), patch.object(module, 'MEDIA_LIMIT', 8):
+            # Fixture files are explicitly expendable; production protects unknown media.
+            with patch.object(module, 'ROOT', root), patch.object(module, 'MEDIA_LIMIT', 8), patch('services.image_protection_service.status', return_value={'protected': False}):
                 module.cleanup()
             self.assertFalse(old.exists())
             self.assertFalse(oldest.exists())

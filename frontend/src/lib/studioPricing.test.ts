@@ -8,6 +8,7 @@ describe('用户图片费用估算', () => {
     expect(() => getStudioPriceEstimate(pricing, 'auto', 1, 'gpt-image-2.5-flare')).toThrow()
     expect(getStudioPriceEstimate({ ...pricing, model: 'gpt-image-2.5-flare' }, '1024x1024', 1, 'gpt-image-2.5-flare').totalMax).toBe(.03)
   })
+  it('按用量计费时不给出固定单张报价', () => { expect(() => getStudioPriceEstimate({ ...pricing, unit: 'token' }, '1024x1024', 1)).toThrow() })
   it('按最长边分档并乘以真实图片数量', () => {
     expect(getStudioPriceEstimate(pricing, '1024x1024', 3)).toMatchObject({ tier: '1K', totalMin: .09, totalMax: .09 })
     expect(getStudioPriceEstimate(pricing, '1536x1024', 2)).toMatchObject({ tier: '2K', totalMax: .1 })

@@ -122,6 +122,10 @@ def merge_web_routes(config):
         anchor = 'location ^~ /assets/'
         assert anchor in config, '未知静态资源配置，停止覆盖'
         config = config.replace(anchor, 'location ^~ /template-media/ { proxy_buffering on; proxy_pass http://backend:8080; }\n    ' + anchor, 1)
+    if 'location = /embed ' not in config:
+        anchor = 'location = /index.html '
+        assert anchor in config, '未知首页路由，停止覆盖'
+        config = config.replace(anchor, 'location = /embed { add_header Cache-Control no-store; include /etc/nginx/snippets/security-headers.conf; try_files /embed.html /index.html =404; }\n    ' + anchor, 1)
     return config
 
 

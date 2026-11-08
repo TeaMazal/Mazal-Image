@@ -1,7 +1,7 @@
 {
   "id": "souhub",
   "name": "Souhub Image",
-  "mainOrigin": "https://souhub.top",
+  "mainOrigin": "https://ai.souhub.top",
   "publicOrigin": "https://img.souhub.top",
   "downloadPrefix": "Souhub-Image",
   "guideStorageKey": "souhub-studio-guide-v1",

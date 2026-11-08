@@ -340,6 +340,46 @@ class GatewayIntegrationTests(unittest.TestCase):
         other = integration.customer_identity('another-customer')
         self.assertEqual(service.list_tasks(other, ['same-id'])['missing_ids'], ['same-id'])
 
+    def test_duplicate_id_changed_prompt_model_and_reference_content_are_conflicts(self):
+        from fastapi import HTTPException
+        from services.image_task_service import _request_fingerprint
+        path = Path(temporary_state.name) / 'conflict-test.json'
+        service = ImageTaskService(path)
+        identity = {**integration.customer_identity(CUSTOMER), '_gateway_token': CUSTOMER, '_gateway_client_ip': '198.51.100.42'}
+        service.submit_generation(identity, client_task_id='conflict-id', prompt='first', model='gpt-image-2', size=None)
+        before = len(SEEN)
+        for prompt,model in [('changed','gpt-image-2'),('first','gpt-image-2.5-flare')]:
+            with self.assertRaises(HTTPException) as caught:
+                with patch.dict(os.environ, MI_ENABLED_IMAGE_MODELS='gpt-image-2,gpt-image-2.5-flare'):
+                    service.submit_generation(identity, client_task_id='conflict-id', prompt=prompt, model=model, size=None)
+            self.assertEqual(caught.exception.status_code,409)
+        a = {'model':'gpt-image-2','images':[(b'a','same.png','image/png')]}
+        b = {'model':'gpt-image-2','images':[(b'b','same.png','image/png')]}
+        self.assertNotEqual(_request_fingerprint('edit',a),_request_fingerprint('edit',b))
+        self.assertEqual(_request_fingerprint('edit',{**a,'base_url':'https://old'}),_request_fingerprint('edit',{**a,'base_url':'https://new'}))
+
+    def test_gateway_ambiguous_result_never_reposts_and_marks_unconfirmed(self):
+        from fastapi import HTTPException
+        path = Path(temporary_state.name) / 'unconfirmed-test.json'
+        service = ImageTaskService(path)
+        identity = {**integration.customer_identity(CUSTOMER), '_gateway_token': CUSTOMER, '_gateway_client_ip': '198.51.100.42'}
+        with patch.object(integration,'image_request',side_effect=HTTPException(503,detail={'error':'result unknown','code':'result_unconfirmed'})) as call:
+            service.submit_generation(identity,client_task_id='unconfirmed-id',prompt='test',model='gpt-image-2',size=None)
+            for _ in range(100):
+                task=service.list_tasks(identity,['unconfirmed-id'])['items'][0]
+                if task['status']=='error':break
+                time.sleep(.01)
+            self.assertEqual(call.call_count,1)
+            self.assertEqual(task['result_state'],'unconfirmed')
+            self.assertEqual(task['error_code'],'result_unconfirmed')
+            restored = ImageTaskService(path)
+            self.assertEqual(restored.list_tasks(identity,['unconfirmed-id'])['items'][0]['result_state'],'unconfirmed')
+            restored.submit_generation(identity,client_task_id='unconfirmed-id',prompt='test',model='gpt-image-2',size=None)
+            self.assertEqual(call.call_count,1)
+            with self.assertRaises(HTTPException) as conflict:
+                restored.submit_generation(identity,client_task_id='unconfirmed-id',prompt='changed',model='gpt-image-2',size=None)
+            self.assertEqual(conflict.exception.status_code,409)
+
     def test_every_admin_route_denies_before_reading_or_changing_data(self):
         pending = list(integration.app.engine.routes)
         flattened = []

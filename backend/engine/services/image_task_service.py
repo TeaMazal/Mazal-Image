@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import threading
 import time
 from collections.abc import Callable
@@ -61,6 +62,19 @@ def _collect_image_urls(data: list[Any]) -> list[str]:
     return urls
 
 
+def _request_fingerprint(mode, payload):
+    def normalize(value):
+        if isinstance(value, bytes):
+            return {"sha256": hashlib.sha256(value).hexdigest(), "bytes": len(value)}
+        if isinstance(value, dict):
+            return {k: normalize(v) for k, v in value.items() if k not in ("base_url", "progress_callback")}
+        if isinstance(value, (tuple, list)):
+            return [normalize(v) for v in value]
+        return value
+    raw = json.dumps({"mode": mode, "payload": normalize(payload)}, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 def _public_task(task: dict[str, Any]) -> dict[str, Any]:
     item = {
         "id": task.get("id"),
@@ -72,6 +86,9 @@ def _public_task(task: dict[str, Any]) -> dict[str, Any]:
         "created_at": task.get("created_at"),
         "updated_at": task.get("updated_at"),
     }
+    for name in ("error_code", "result_state", "http_status"):
+        if task.get(name) is not None:
+            item[name] = task[name]
     if task.get("conversation_id"):
         item["conversation_id"] = task.get("conversation_id")
     if task.get("data") is not None:
@@ -204,18 +221,24 @@ class ImageTaskService:
             raise ValueError("client_task_id is required")
         owner = _owner_id(identity)
         key = _task_key(owner, task_id)
+        fingerprint = _request_fingerprint(mode, payload)
         now = _now_iso()
         should_start = False
         with self._lock:
             cleaned = self._cleanup_locked()
             task = self._tasks.get(key)
             if task is not None:
+                # Legacy records cannot prove payload identity; they are query-only.
+                if task.get("request_hash") != fingerprint:
+                    from fastapi import HTTPException
+                    raise HTTPException(409, detail={"error": "同一任务编号已有其他内容或旧记录，请查询原任务，未重复生成"})
                 if cleaned:
                     self._save_locked()
                 return _public_task(task)
             task = {
                 "id": task_id,
                 "owner_id": owner,
+                "request_hash": fingerprint,
                 "status": TASK_STATUS_QUEUED,
                 "mode": mode,
                 "model": _clean(payload.get("model"), "gpt-image-2"),
@@ -411,6 +434,15 @@ class ImageTaskService:
             http_status = item.get("http_status")
             if type(http_status) is int and 400 <= http_status <= 599:
                 task["http_status"] = http_status
+            request_hash = item.get("request_hash")
+            if isinstance(request_hash, str) and len(request_hash) == 64 and all(c in "0123456789abcdef" for c in request_hash):
+                task["request_hash"] = request_hash
+            if item.get("error_code") in ("result_unconfirmed", "request_rejected"):
+                task["error_code"] = item["error_code"]
+            if item.get("result_state") in ("unconfirmed", "failed"):
+                task["result_state"] = item["result_state"]
+            if isinstance(item.get("conversation_id"), str):
+                task["conversation_id"] = item["conversation_id"]
             tasks[_task_key(owner, task_id)] = task
         return tasks
 
@@ -425,7 +457,9 @@ class ImageTaskService:
         for task in self._tasks.values():
             if task.get("status") in UNFINISHED_STATUSES:
                 task["status"] = TASK_STATUS_ERROR
-                task["error"] = "服务已重启，未完成的图片任务已中断"
+                task["error"] = "服务已重启，原任务结果待核对；请检查原任务和账单，未自动重新提交"
+                task["error_code"] = "result_unconfirmed"
+                task["result_state"] = "unconfirmed"
                 task["updated_at"] = _now_iso()
                 changed = True
         return changed

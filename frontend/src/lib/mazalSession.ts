@@ -12,6 +12,7 @@ export interface MazalSession {
   role: 'user' | 'admin'
   balance: MazalBalance
   models: string[]
+  edit_models?: string[]
   image_model_catalog?: Array<{ id: string; name: string; available: boolean }>
   notice: string
 }
@@ -61,11 +62,13 @@ export class MazalRequestError extends Error {
 }
 
 export async function mazalRequest<T>(path: string, init: RequestInit = {}, key = getMazalKey()): Promise<T> {
+  const headers = new Headers(init.headers)
+  headers.set('Authorization', `Bearer ${key}`)
   const response = await fetch(path, {
     ...init,
     cache: 'no-store',
     credentials: 'same-origin',
-    headers: { ...init.headers, Authorization: `Bearer ${key}` },
+    headers,
     signal: init.signal ?? AbortSignal.timeout(20_000),
   }).catch((err) => {
     if (err instanceof DOMException && err.name === 'TimeoutError') throw new Error('连接超时，请稍后重试')

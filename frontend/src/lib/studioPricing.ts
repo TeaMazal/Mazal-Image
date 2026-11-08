@@ -3,7 +3,7 @@ import type { MazalBalance } from './mazalSession'
 export interface StudioImagePricing {
   model: string
   currency: 'USD'
-  unit: 'image'
+  unit: 'image' | 'token'
   prices: Record<'1K' | '2K' | '4K', number>
   observed_at: string
   billing_size_source: 'output'

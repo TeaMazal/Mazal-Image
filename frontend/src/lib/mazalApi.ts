@@ -80,6 +80,8 @@ export async function callMazalImageApi(opts: CallApiOptions): Promise<CallApiRe
   if (opts.params.n !== 1) throw new Error('每个任务生成一张图片，多张创作请使用批量排队。')
   const model = getActiveApiProfile(opts.settings).model
   if (!getMazalSession()?.models.includes(model)) throw new MazalTaskError('此图片模型尚未开放或当前密钥无权限，请重新选择可用模型。')
+  const editModels = getMazalSession()?.edit_models
+  if (opts.inputImageDataUrls.length && editModels && !editModels.includes(model)) throw new MazalTaskError('此模型尚未通过参考图编辑验证，请选择已支持编辑的模型。')
   const id = opts.clientTaskId ?? crypto.randomUUID()
   // 在发出请求前记录 ID；即使提交响应丢失，刷新后也能查询同一任务。
   await opts.onCustomTaskEnqueued?.({ taskId: id })

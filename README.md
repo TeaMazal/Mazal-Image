@@ -4,6 +4,8 @@
 
 基于 [CookSleep/gpt_image_playground](https://github.com/CookSleep/gpt_image_playground) 与 [basketikun/chatgpt2api](https://github.com/basketikun/chatgpt2api)，保留两份上游版权和第三方许可。项目提供整合后的源码、运行配置、镜像构建、测试与迁移说明。
 
+2026-11-08 已补齐 Souhub 绘图 r32 的模型、报价和任务恢复源码，以及主站 Web 类型标签 r33 的复现配方，详见 [源码同步范围与验证](docs/SOURCE_SYNC_20261108.md)。上传管理系统独立维护。本次更新 main 源码，不改变一键安装器固定的 v0.1.2 版本；要部署当前集成能力须按相应集成文档配置。
+
 ## 功能
 
 - 文字生图、多参考图、画板标注、遮罩编辑，支持桌面和手机。
@@ -26,6 +28,8 @@
 浏览器工作区 → 同源集成层 → 主站图片网关 → 账号池引擎。
 
 当前整合版依赖兼容 Sub2API 的主站接口；它不包含整个主站，不提供无计费主站的独立用户系统。账号池后台继续由引擎提供，并非重写成一个新的统一管理后台。直接部署纯静态前端不能获得完整功能。
+
+上述为默认安装模式。Souhub 的可选主站集成已将账号池、绘图管理及计费集中到 Sub2，绘图站负责用户创作与网关转发；源码及基线要求见 `integrations/sub2-web-accounts`、`integrations/drawing-management` 和 `integrations/model-integration`。主站集成和默认安装模式不能混用部署步骤。
 
 运行入口：用户 `/`，管理员 `/accounts/`，管理设置 `/settings/`；普通用户使用主站 API 密钥，管理员使用本次初始化生成的内部管理密钥。不要向普通用户分发内部密钥。
 

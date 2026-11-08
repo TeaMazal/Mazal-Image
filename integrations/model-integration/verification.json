@@ -1,0 +1,172 @@
+{
+  "release": "souhub-model-integration-r32-reviewed",
+  "date": "2026-11-08",
+  "passed": true,
+  "model_matrix": [
+    {
+      "requested_model": "gpt-image-2",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.5",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.5-flare",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.5-sunburst",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.6",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.6-flare",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    },
+    {
+      "requested_model": "gpt-image-2.6-sunburst",
+      "generation_returned_decodable_image": true,
+      "edit_returned_decodable_image": true,
+      "upstream_declared_model": null,
+      "actual_model_independently_confirmed": false
+    }
+  ],
+  "admin_images_decoded": 14,
+  "customer_acceptance": {
+    "successful_images": 4,
+    "ledger_entries": 4,
+    "actual_platform_charge_usd": 0.24,
+    "original_and_thumbnail_auth_checks": 8,
+    "idempotent_replay_no_extra_ledger_entry": true,
+    "changed_request_same_id_http_status": 409,
+    "temporary_key_disabled_http_status": 401
+  },
+  "tests": {
+    "production_workbench_full_suite": 950,
+    "additional_quote_regressions": 2,
+    "python_related_modules": 107,
+    "go_targeted_regressions_and_unit_tags": "passed",
+    "backend_source_patch_replayed_files": 20,
+    "builds": "passed",
+    "shared_repository_frontend_full_suite": 952,
+    "shared_repository_frontend_test_files": 78,
+    "shared_repository_frontend_test_workers": 2
+  },
+  "browsers": {
+    "admin": {
+      "passed": true,
+      "checks": [
+        "model-catalog-does-not-imply-generation-access",
+        "reauthorization-flow",
+        "import-preview-before-save",
+        "eight-pages-on-real-router-and-layout",
+        "template-save-preserves-defined-variables",
+        "structured-storage-and-backup-form",
+        "execution-settings-use-main-runtime-api",
+        "poll-preserves-draft-and-focus",
+        "exact-image-variants-and-failure-diagnostics",
+        "conversation-drafts-independent",
+        "desktop-dark-mobile-layout",
+        "zoom-close-preserves-drawer-and-lazy-image-observers",
+        "private-thumbnails-reference-result-separation-and-stable-drawer",
+        "record-filter-retained-and-log-detail-no-row-expansion",
+        "records-mobile-and-detail-layout"
+      ]
+    },
+    "workbench": {
+      "passed": true,
+      "checks": [
+        "empty-title-not-clipped",
+        "two-images-one-round-and-requested-model",
+        "conversations-images-and-drafts-isolated",
+        "selected-model-quote-and-token-billing",
+        "refresh-preserves-draft",
+        "mobile-title-composer-and-navigation"
+      ]
+    },
+    "live": {
+      "passed": true,
+      "checks": [
+        "live-workbench-authenticated",
+        "live-seven-model-menu-and-selected-model-quote",
+        "live-mobile-title-and-width"
+      ]
+    }
+  },
+  "production": {
+    "sub2api-souhub-model-integration-r32-reviewed": {
+      "running": true,
+      "image": "sha256:b4c678bc3d487ed925831de64672bb1ee6aafe9819dab60bbd5364238d49ce53"
+    },
+    "mazal-image-backend-1": {
+      "running": true,
+      "image": "sha256:bbd563d20d1fa20e3c612bb788d1d98cbd89e210c559efe50841167cb6552f53"
+    },
+    "mazal-image-web-1": {
+      "running": true,
+      "image": "sha256:65271889078d5d8648541ec6168471f890f28a8c5ceb760d18bf4f1ddec27e66"
+    },
+    "background_workers": {
+      "single_active_main": true,
+      "count": 31
+    },
+    "shared_resources_preserved": true,
+    "https://souhub.top/": {
+      "http_status": 200,
+      "bytes": 14198
+    },
+    "https://ai.souhub.top/admin/drawing/test": {
+      "http_status": 200,
+      "bytes": 17929
+    },
+    "https://img.souhub.top/": {
+      "http_status": 200,
+      "bytes": 1494
+    },
+    "https://img.souhub.top/embed": {
+      "http_status": 200,
+      "bytes": 2286
+    },
+    "embed_origin_and_csp_correct": true,
+    "web_accepts_requests": true,
+    "acceptance_key_disabled": true,
+    "billing": {
+      "status": "inactive",
+      "quota_used": 0.24,
+      "usage_count": 4,
+      "sum_actual_cost": 0.24
+    },
+    "disabled_key_http_status": 401,
+    "paid_acceptance_usd": 0.24,
+    "passed": true,
+    "timestamp": 1794122609.5788302
+  },
+  "limits": [
+    "Upstream returned no model declaration; requested model routing is verified, actual model identity remains unconfirmed.",
+    "Two uncertain acceptance requests retained for reconciliation; no automatic resubmission.",
+    "Platform acceptance charge excludes administrator tests and unknown upstream charges.",
+    "Evidence belongs to the tested account, model and operation; plan labels do not establish entitlement."
+  ]
+}

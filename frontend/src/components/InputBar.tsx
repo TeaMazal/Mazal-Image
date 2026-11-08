@@ -7,7 +7,7 @@ import { getActiveApiProfile, getAgentImageApiProfile, normalizeSettings, resolv
 import { getImageGenerationModel, isGptImage25Model } from '../lib/imageModels'
 import { ensureImageCached, getCachedImage } from '../lib/imageCache'
 import { splitBatchPrompts } from '../lib/batchPrompts'
-import { MAZAL_PROVIDER } from '../lib/mazalSession'
+import { MAZAL_PROVIDER, getMazalSession } from '../lib/mazalSession'
 import { DEFAULT_FAL_IMAGE_SIZE, getChangedParams, getOutputImageLimitForSettings, normalizeParamsForSettings } from '../lib/paramCompatibility'
 import { getAtImageQuery, getImageComments, getImageMentionLabel, getPromptIndexFromVisibleIndex, getPromptMentionParts, imageMentionMatches, insertImageMentionAtVisibleRange, insertTextMentionAtVisibleRange, isCursorInSelectedImageMention, stripImageMentionMarkers } from '../lib/promptImageMentions'
 import { normalizeCodexCliImageSize, normalizeImageSize } from '../lib/size'
@@ -475,7 +475,8 @@ export default function InputBar() {
   const hasSubmitApiConfig = Boolean(activeProfile.apiKey)
   // 批量进行中暂停画廊和 Agent 的提交，需等待完成或停止后再提交
   const batchRunning = Boolean(batchProgress)
-  const canSubmit = Boolean(prompt.trim() && hasSubmitApiConfig && !activeAgentIsRunning && !batchRunning)
+  const editingUnavailable = activeProfile.provider === MAZAL_PROVIDER && inputImages.length > 0 && getMazalSession()?.edit_models != null && !getMazalSession()!.edit_models!.includes(activeProfile.model)
+  const canSubmit = Boolean(!editingUnavailable && prompt.trim() && hasSubmitApiConfig && !activeAgentIsRunning && !batchRunning)
   const batchEnabled = appMode === 'gallery' && settings.showBatchPrompt && settings.batchPromptEnabled
   // 批量进行中始终在画廊显示入口，以便查看进度和停止
   const showBatch = appMode === 'gallery' && (settings.showBatchPrompt || batchRunning)
@@ -1997,6 +1998,7 @@ export default function InputBar() {
               <div className="studio-composer-params min-w-0 flex-1">{renderParams()}</div>
 
               <div className="studio-composer-submit flex items-center gap-3 flex-shrink-0">
+                {editingUnavailable && <span role="status" className="text-xs text-gray-500">此模型暂未开放参考图编辑，请切换模型</span>}
                 {!isMobile && activeProfile.provider === MAZAL_PROVIDER && <StudioPriceEstimate key={activeProfile.model} model={activeProfile.model} size={params.size} count={params.n * (batchEnabled ? batchPromptCount : 1)} />}
                 <div
                   className="relative"

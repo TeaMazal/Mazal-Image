@@ -1,5 +1,9 @@
 # 两站统一维护与发布
 
+2026-11-08 源码补齐：共享绘图 r32、主站模型集成及 Web 标签 r33 已整理，范围和线上比对见 [源码同步记录](SOURCE_SYNC_20261108.md)。主站已另行升级授权上传入口 r34；上传系统属于独立维护范围，本次不纳入。下方容器、端口及发布记录均为对应发布时的历史状态，实际操作先读取服务器当前指针。
+
+2026-11-08 Souhub 已上线 r32 reviewed：Image 2、2.5/2.6 的 Flare、Sunburst 和通用名称完成指定账号的生成/编辑验证，联通用户模型权限、报价、调度、图片记录及真实账单。上游未声明实际模型版本，后台明确保留该边界。修复任务幂等恢复、调度身份快照、流水编号关联与报价竞态；保留同轮多图、画布及共享资源。最终状态、验收费用与恢复说明以 [r32 完整记录](MODEL_INTEGRATION_20261108.md)、`integrations/model-integration`、`operations/model-integration-current.json` 为准。此段取代下方历史版本的当前状态描述，新加坡 Mazal 未部署。
+
 2026-11-08 Souhub 主站上线 r31 绘图测试诊断修复，区分限流、授权/访问拒绝、图片工具拒绝和未知结果，管理员菜单增加准确的 2.5 Flare/Sunburst 选项。真实 #940 Flare 测试返回 403，未确认 2.5 成功出图，也未向用户开放新模型。后续优先核对 [r31 记录](IMAGE_DIAGNOSTICS_20261108.md)、`integrations/image-diagnostics` 和 `operations/drawing-management-current.json`；绘图前端/引擎保持 r29。
 
 2026-11-07 Souhub 最新上线主站绘图体验 r30、绘图网关与工作台 r29：新增用户生成记录、私密图片预览与真实账单关联，完善侧边详情、筛选保留及多图轮次归组。后续优先核对 [体验与作品归档发布记录](DRAWING_EXPERIENCE_20261107.md)、`integrations/drawing-experience` 和 `operations/drawing-management-current.json`。新归档目录与旧存储清理分开，本轮无额外付费生图；新加坡 Mazal 未部署。

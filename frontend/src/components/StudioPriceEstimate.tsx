@@ -5,17 +5,19 @@ import StudioHelpButton from './StudioHelp'
 import { siteConfig } from '../lib/siteConfig'
 
 type PriceData = { pricing: StudioImagePricing; balance: MazalBalance }
-let cached: { key: string; model: string; data: PriceData; at: number } | null = null
+let cached: { key: string; data: PriceData; at: number } | null = null
 
-export default function StudioPriceEstimate({ size, count, model = 'gpt-image-2' }: { size: string; count: number; model?: string }) {
-  const key = getMazalKey()
-  const [data, setData] = useState<PriceData | null>(() => cached?.key === key && cached.model === model ? cached.data : null)
+export default function StudioPriceEstimate({ model, size, count }: { model: string; size: string; count: number }) {
+  const key = getMazalKey() + ':' + model
+  const currentKey = useRef(key)
+  currentKey.current = key
+  const [data, setData] = useState<PriceData | null>(() => cached?.key === key ? cached.data : null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const details = useRef<HTMLDetailsElement>(null)
   async function refresh(signal?: AbortSignal, force = false) {
     if (document.visibilityState === 'hidden') return
-    if (!force && cached?.key === key && cached.model === model && Date.now() - cached.at < 60_000) {
+    if (!force && cached?.key === key && Date.now() - cached.at < 60_000) {
       setData(cached.data)
       return
     }
@@ -23,24 +25,27 @@ export default function StudioPriceEstimate({ size, count, model = 'gpt-image-2'
     try {
       const requestSignal = signal ? AbortSignal.any([signal, AbortSignal.timeout(20_000)]) : AbortSignal.timeout(20_000)
       const [pricing, balance] = await Promise.all([
-        mazalRequest<StudioImagePricing>(`/v1/sub2api/image-pricing?model=${encodeURIComponent(model)}`, { signal: requestSignal }),
+        mazalRequest<StudioImagePricing>('/v1/sub2api/image-pricing?model=' + encodeURIComponent(model), { signal: requestSignal }),
         mazalRequest<MazalBalance>('/api/customer-balance', { signal: requestSignal }),
       ])
-      getStudioPriceEstimate(pricing, 'auto', 1, model)
-      if (signal?.aborted) return
-      cached = { key, model, data: { pricing, balance }, at: Date.now() }
+      if (pricing.model !== model) throw new Error('模型报价不匹配')
+      if (pricing.unit !== 'token') getStudioPriceEstimate(pricing, 'auto', 1, model)
+      if (signal?.aborted || currentKey.current !== key) return
+      cached = { key, data: { pricing, balance }, at: Date.now() }
       setData(cached.data)
       setError('')
     } catch {
-      if (signal?.aborted) return
-      if (cached?.key === key && cached.model === model) cached = null
+      if (signal?.aborted || currentKey.current !== key) return
+      if (cached?.key === key) cached = null
       setData(null)
       setError('暂时无法查询价格')
     } finally {
-      if (!signal?.aborted) setBusy(false)
+      if (!signal?.aborted && currentKey.current === key) setBusy(false)
     }
   }
   useEffect(() => {
+    setData(cached?.key === key ? cached.data : null)
+    setError('')
     const controller = new AbortController()
     const update = () => void refresh(controller.signal)
     const updateNow = () => void refresh(controller.signal, true)
@@ -53,15 +58,15 @@ export default function StudioPriceEstimate({ size, count, model = 'gpt-image-2'
     document.addEventListener('pointerdown', closeOutside)
     document.addEventListener('keydown', closeOnEscape)
     return () => { controller.abort(); window.clearInterval(timer); window.removeEventListener('focus', updateNow); window.removeEventListener('mazal-balance-refresh', updateNow); document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeOnEscape) }
-  }, [])
-  const estimate = data && count > 0 ? getStudioPriceEstimate(data.pricing, size, count, model) : null
+  }, [key, model])
+  const estimate = data && data.pricing.model === model && data.pricing.unit === 'image' && count > 0 ? getStudioPriceEstimate(data.pricing, size, count, model) : null
   const available = data ? getStudioAvailableBalance(data.balance) : null
   const range = (min: number, max: number) => min === max ? formatStudioUsd(min) : `${formatStudioUsd(min)}–${formatStudioUsd(max)}`
   return <div className="studio-price-estimate" aria-label="本轮费用估算">
     <details ref={details}>
-      <summary>{estimate ? `预计 ${range(estimate.totalMin, estimate.totalMax)}` : error ? '价格暂不可用' : count <= 0 ? '费用说明' : '查询价格…'} <span aria-hidden="true">ⓘ</span></summary>
+      <summary>{estimate ? `预计 ${range(estimate.totalMin, estimate.totalMax)}` : error ? '价格暂不可用' : data?.pricing.model === model && data.pricing.unit === 'token' ? '按实际用量计费' : count <= 0 ? '费用说明' : '查询价格…'} <span aria-hidden="true">ⓘ</span></summary>
       <div className="studio-price-popover">
-        {estimate ? <><p>{range(estimate.unitMin, estimate.unitMax)} / 张 · 本轮 {count} 张 · USD</p><p>{estimate.tier ? `按所选尺寸 ${estimate.tier} 估算；` : '自动尺寸按各档价格估算；'}最终按实际输出尺寸及成功图片数量计费。</p></> : <p>{error || (count <= 0 ? '输入提示词后可查看本轮预计费用。' : '正在读取当前密钥的价格。')}</p>}
+        {estimate ? <><p>{range(estimate.unitMin, estimate.unitMax)} / 张 · 本轮 {count} 张 · USD</p><p>{estimate.tier ? `按所选尺寸 ${estimate.tier} 估算；` : '自动尺寸按各档价格估算；'}最终按实际输出尺寸及成功图片数量计费。</p></> : <p>{data?.pricing.model === model && data.pricing.unit === 'token' ? '此模型按实际用量结算，生成前无法给出固定单张价格，请以主站账单为准。' : error || (count <= 0 ? '输入提示词后可查看本轮预计费用。' : '正在读取当前密钥的价格。')}</p>}
         {error && <button disabled={busy} onClick={() => void refresh(undefined, true)}>{busy ? '查询中…' : '重试查询'}</button>}
         <StudioHelpButton topic="billing">查看计费说明 ↗</StudioHelpButton>
       </div>

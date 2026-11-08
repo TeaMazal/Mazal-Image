@@ -1,0 +1,82 @@
+{
+  "internal/handler/drawing_capture.go": {
+    "before": "611d583c6305437f6f23e5d7a26f8620e1af253f5e59f85a1c1031e26c7b3f3f",
+    "after": "9f4c292c5e0939a73fb96d2c245c1676602f9a11f012efcdfb829c2f15a143fb"
+  },
+  "internal/handler/gateway_handler.go": {
+    "before": "6e6edd212e0dc28915b7d72dcdcfaba2f3e03bbc553b607d5db5f847cc6116ba",
+    "after": "6e9c11e2a3fb3af2849d7f842abf4580a50a1b41c66402a973604d3b9521869f"
+  },
+  "internal/handler/gateway_image_quote.go": {
+    "before": "4a5d550e5f63f83cf7b071086506040c05cd624504cc35cb4095ebb6459b3ff1",
+    "after": "b2bb1e84b21deb78e341a3eed64b905cbedd459e48da7cb664bd90390deb66cf"
+  },
+  "internal/handler/openai_images.go": {
+    "before": "89117741a082c1f44da1c3a46762d7666d42040fae55ef517b1bfe332c882920",
+    "after": "13d24344918a0f8c9ef8a61ca4ed8e2de5f027084b757f698531df0e1487b718"
+  },
+  "internal/service/drawing_billing.go": {
+    "before": null,
+    "after": "4fbae2707471cb6f724751220ebd9df161f22f2891fb337ac2412f32da6575dc"
+  },
+  "internal/service/drawing_billing_test.go": {
+    "before": null,
+    "after": "42867fadf68937dee46c55faaa59ee56b37a761297f7a021f691d050c4491404"
+  },
+  "internal/service/drawing_capability.go": {
+    "before": null,
+    "after": "c67a26bc56ad1ad8a9cef54ee596259895e358281ca188173b0a305142ce06a3"
+  },
+  "internal/service/drawing_capability_test.go": {
+    "before": null,
+    "after": "423fbdcf0ca87ea2ff564b98e20bcac3b93e8cd73a3f5791f0209335ada027c2"
+  },
+  "internal/service/drawing_diagnostic.go": {
+    "before": "587dfacdc725ae2a38960f555441426d783ded6d52c3b45a516013ae05473147",
+    "after": "654c51f36c137cdbb87bab595c50a2b8e40012d7d947f6894825ab0a00cf71fc"
+  },
+  "internal/service/drawing_diagnostic_test.go": {
+    "before": "f01b2a8150248fa2b6f9f59a7c7ebe536a7e91797e6b15e6e617c2a0f8c3901e",
+    "after": "da9f186bc26e1420cb2d9c16dff40388ed9db28429a0df47e03e3885f01eff2c"
+  },
+  "internal/service/drawing_generation.go": {
+    "before": "d713eaa97b35a7a38e2c9c420e2a8b3cc2e03e0b77fa1f4cf647b3cc5ab0a4e8",
+    "after": "0501d54b3fbc2c57fe6aef295cf2c60774215129cdae06045e6e1288737452d4"
+  },
+  "internal/service/image_customer_quote.go": {
+    "before": "08412190dba72d324f55bb9b96634ca41e308e78b600abfc74847db96caa684f",
+    "after": "744a4eb882de0e275b199a0c0cca16c3798d3f613a6b3d6d8d081f60a3dc5835"
+  },
+  "internal/service/openai_account_scheduler.go": {
+    "before": "d2aef60dd666ef89005639c6fc464d705b9112b028c4ffd7e6cedaf7754e55fd",
+    "after": "6f0ef5371f93de1344b0f5112d019d186f6909d0fb7ec5da10202cdfd5cda840"
+  },
+  "internal/service/openai_images_direct.go": {
+    "before": "e37e5259a132a154882203c46d37f21d70cba6c2286c70fb914d181ce210eaed",
+    "after": "1ad01ff3bb5f46f5f30d1c76ee0db237c999e6fb10e9c050d136434b0f1df8f6"
+  },
+  "internal/service/openai_images_direct_test.go": {
+    "before": "e75440d2fab5908241c2c765f170b7c8894dcffa05c62b178301ee684d5958ea",
+    "after": "9a5bd562bc64d92be07c5ddea217376789adac30fbee86d0b20fb987000f4f26"
+  },
+  "internal/service/openai_images_responses.go": {
+    "before": "79b33539c34abc69e77b6538d8d0fc8e197cdadb2f2bfc223c93e869b291c44a",
+    "after": "df01c4863e2563451383d5f4f304c22369a32d54f911da8fd66a41b939b8cbcf"
+  },
+  "internal/handler/admin/drawing_models.go": {
+    "before": "a0b753f24e83e6403c583750988b9ce08dfb9889d8b5089717002a6c003fe95a",
+    "after": "fc6cdbcb0566d28f66a7962a86e221bd3b113a1b9c8f345bc8a437dcd7501cd2"
+  },
+  "internal/handler/admin/drawing_test_jobs.go": {
+    "before": "eef69e6903a4d25881654f600d3c4f3a84d674cfc79052918b36ab8d6665c2c2",
+    "after": "c73f7a92b0a90aa183271f79d464f79872a8cff844412695269b4bdc262965e1"
+  },
+  "internal/pkg/drawingrecord/store.go": {
+    "before": "3522aa0aaff0bfc03abc507f271153c22d37c50df2ac2584e2ab2c600936cb0f",
+    "after": "c9fae1e791c1656a0af7326289fd44a6fccd6f6b5ea6890be064e520b58351c9"
+  },
+  "internal/pkg/drawingrecord/store_test.go": {
+    "before": "62f785f222b28a4be4bda3a1917df4076b1318a481e4b7394e7b8c974d8cefa0",
+    "after": "c90feb81a596652c6cdad24f204561703fc59cbd8bb4c59e776f40a168301ec3"
+  }
+}
