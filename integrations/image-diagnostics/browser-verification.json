@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "checks": [
+    "model-catalog-does-not-imply-generation-access",
+    "reauthorization-flow",
+    "import-preview-before-save",
+    "eight-pages-on-real-router-and-layout",
+    "template-save-preserves-defined-variables",
+    "structured-storage-and-backup-form",
+    "execution-settings-use-main-runtime-api",
+    "poll-preserves-draft-and-focus",
+    "exact-image-variants-and-failure-diagnostics",
+    "conversation-drafts-independent",
+    "desktop-dark-mobile-layout",
+    "zoom-close-preserves-drawer-and-lazy-image-observers",
+    "private-thumbnails-reference-result-separation-and-stable-drawer",
+    "record-filter-retained-and-log-detail-no-row-expansion",
+    "records-mobile-and-detail-layout"
+  ],
+  "errors": [],
+  "missing": []
+}

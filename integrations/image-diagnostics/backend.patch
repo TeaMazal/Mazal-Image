@@ -1,0 +1,858 @@
+--- a/internal/service/drawing_generation.go
++++ b/internal/service/drawing_generation.go
+@@ -1,25 +1,36 @@
+ package service
+ 
+ import (
+- "context"
+- "fmt"
+- "net/http"
+- "net/http/httptest"
++	"context"
++	"fmt"
++	"net/http"
++	"net/http/httptest"
+ 
+- "github.com/gin-gonic/gin"
++	"github.com/gin-gonic/gin"
+ )
+ 
+ // RunDrawingImage uses the same selected-account generation/edit adapter as the
+ // gateway. Administrative diagnostics consume upstream quota but no user balance.
+-func(s *AccountTestService) RunDrawingImage(ctx context.Context,account *Account,body []byte,edit bool)([]byte,error) {
+- if s.openaiGatewayService==nil{return []byte(`{"error":{"code":"drawing_executor_unavailable"}}`),fmt.Errorf("绘图执行器不可用")}
+- recorder:=httptest.NewRecorder();inner,_:=gin.CreateTestContext(recorder)
+- path:=openAIImagesGenerationsEndpoint;if edit{path=openAIImagesEditsEndpoint}
+- inner.Request,_=http.NewRequestWithContext(ctx,"POST","http://localhost"+path,nil)
+- inner.Request.Header.Set("Content-Type","application/json")
+- parsed,err:=s.openaiGatewayService.ParseOpenAIImagesRequest(inner,body)
+- if err!=nil{return []byte(`{"error":{"code":"drawing_parameters_invalid"}}`),fmt.Errorf("绘图参数无效: %w",err)}
+- parsed.Stream=false
+- _,err=s.openaiGatewayService.ForwardImages(ctx,inner,account,body,parsed,"")
+- return recorder.Body.Bytes(),err
++func (s *AccountTestService) RunDrawingImage(ctx context.Context, account *Account, body []byte, edit bool) ([]byte, error) {
++	if s.openaiGatewayService == nil {
++		return []byte(`{"error":{"code":"drawing_executor_unavailable"}}`), fmt.Errorf("绘图执行器不可用")
++	}
++	recorder := httptest.NewRecorder()
++	inner, _ := gin.CreateTestContext(recorder)
++	path := openAIImagesGenerationsEndpoint
++	if edit {
++		path = openAIImagesEditsEndpoint
++	}
++	inner.Request, _ = http.NewRequestWithContext(ctx, "POST", "http://localhost"+path, nil)
++	inner.Request.Header.Set("Content-Type", "application/json")
++	parsed, err := s.openaiGatewayService.ParseOpenAIImagesRequest(inner, body)
++	if err != nil {
++		return []byte(`{"error":{"code":"drawing_parameters_invalid"}}`), fmt.Errorf("绘图参数无效: %w", err)
++	}
++	parsed.Stream = false
++	_, err = s.openaiGatewayService.ForwardImages(ctx, inner, account, body, parsed, "")
++	if err != nil || recorder.Code >= 400 {
++		return recorder.Body.Bytes(), drawingImageDiagnostic(err, recorder.Code, recorder.Body.Bytes())
++	}
++	return recorder.Body.Bytes(), nil
+ }
+--- /dev/null
++++ b/internal/service/drawing_diagnostic.go
+@@ -0,0 +1,96 @@
++package service
++
++import (
++	"encoding/json"
++	"errors"
++	"net/http"
++	"strings"
++)
++
++// DrawingImageTestError 只保存诊断分类，不将上游凭据或完整响应写入测试历史。
++type DrawingImageTestError struct {
++	Code       string
++	Message    string
++	HTTPStatus int
++	Rejected   bool
++}
++
++func (e *DrawingImageTestError) Error() string { return e.Message }
++
++func DrawingImageTestModels() []string {
++	return []string{"gpt-image-2", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-2.5", "gpt-image-2.6"}
++}
++
++func IsDrawingImageTestModel(model string) bool {
++	for _, candidate := range DrawingImageTestModels() {
++		if candidate == model {
++			return true
++		}
++	}
++	return false
++}
++
++func DrawingImageTestRoute(account *Account, model string) string {
++	if account.IsOpenAIWeb() {
++		return "web"
++	}
++	if usesCodexDirectImages(account.GetMappedModel(model)) {
++		return "codex_images"
++	}
++	return "codex_responses"
++}
++
++func drawingImageDiagnostic(err error, status int, body []byte) *DrawingImageTestError {
++	var failover *UpstreamFailoverError
++	var upstream *OpenAIImagesUpstreamError
++	if errors.As(err, &failover) {
++		status = failover.StatusCode
++		body = failover.ResponseBody
++	}
++	if errors.As(err, &upstream) {
++		status = upstream.StatusCode
++		body, _ = json.Marshal(map[string]any{"error": map[string]string{"message": upstream.Message, "code": upstream.Code}})
++	}
++	d := &DrawingImageTestError{Code: "result_unconfirmed", Message: "请求结果未确认，请检查连接与服务日志；未自动重新提交"}
++	if status >= 400 && status <= 599 {
++		d.HTTPStatus = status
++	}
++	if isOpenAIImageCapabilityLossError(status, body) {
++		d.Code = "image_tool_rejected"
++		d.Message = "上游拒绝 image_generation 工具（HTTP 400）：当前账号、模型与调用路径组合不可用；未自动重试"
++		d.Rejected = true
++		return d
++	}
++	switch status {
++	case http.StatusUnauthorized:
++		d.Code = "authorization_rejected"
++		d.Message = "上游授权失效（HTTP 401），请重新授权该账号；未自动重试"
++		d.Rejected = true
++	case http.StatusForbidden:
++		d.Code = "access_forbidden"
++		d.Message = "上游拒绝访问（HTTP 403），请核对账号权限及代理出口；未自动重试"
++		d.Rejected = true
++	case http.StatusTooManyRequests:
++		d.Code = "upstream_rate_limited"
++		d.Message = "上游限流或额度不足（HTTP 429），请查看账号额度与恢复时间；未自动重试"
++		d.Rejected = true
++	case http.StatusBadRequest, http.StatusUnprocessableEntity:
++		d.Code = "request_rejected"
++		d.Message = "上游拒绝了参数或所选模型，请核对模型与调用路径；未自动重试"
++		d.Rejected = true
++	case http.StatusNotFound, http.StatusMethodNotAllowed:
++		d.Code = "endpoint_unavailable"
++		d.Message = "上游未提供所选接口或模型；未自动重试"
++		d.Rejected = true
++	default:
++		if status >= 500 {
++			d.Code = "upstream_unavailable"
++			d.Message = "上游服务异常，结果未确认；未自动重新提交"
++		}
++	}
++	if err == nil && status < 400 && !strings.Contains(string(body), `"error"`) {
++		d.Code = "image_output_missing"
++		d.Message = "响应中没有可保存的图片，结果未确认；未自动重新提交"
++	}
++	return d
++}
+--- /dev/null
++++ b/internal/service/drawing_diagnostic_test.go
+@@ -0,0 +1,59 @@
++package service
++
++import (
++	"fmt"
++	"strings"
++	"testing"
++)
++
++func TestDrawingDiagnosticPreservesRejection(t *testing.T) {
++	for _, tc := range []struct {
++		status     int
++		body, code string
++	}{
++		{400, `{"error":{"message":"Tool choice image_generation not found in 'tools' parameter"}}`, "image_tool_rejected"},
++		{429, `{"error":{"type":"usage_limit_reached"}}`, "upstream_rate_limited"},
++		{401, `{"error":{"message":"token_revoked secret-do-not-log"}}`, "authorization_rejected"},
++		{403, `{"error":{"message":"access denied"}}`, "access_forbidden"},
++	} {
++		err := fmt.Errorf("wrapped: %w", &UpstreamFailoverError{StatusCode: tc.status, ResponseBody: []byte(tc.body)})
++		d := drawingImageDiagnostic(err, 200, nil)
++		if d.Code != tc.code || d.HTTPStatus != tc.status || !d.Rejected {
++			t.Fatalf("unexpected diagnostic: %+v", d)
++		}
++		if strings.Contains(d.Message, "secret-do-not-log") {
++			t.Fatal("upstream content leaked")
++		}
++	}
++	d := drawingImageDiagnostic(&OpenAIImagesUpstreamError{StatusCode: 400, Message: "Tool choice image_generation not found in 'tools' parameter"}, 200, nil)
++	if d.Code != "image_tool_rejected" {
++		t.Fatalf("typed error discarded: %+v", d)
++	}
++}
++
++func TestDrawingDiagnosticUncertainIsNotRejected(t *testing.T) {
++	for _, d := range []*DrawingImageTestError{drawingImageDiagnostic(fmt.Errorf("network interrupted"), 200, nil), drawingImageDiagnostic(nil, 200, []byte(`{"data":[]}`)), drawingImageDiagnostic(&UpstreamFailoverError{StatusCode: 502}, 200, nil)} {
++		if d.Rejected {
++			t.Fatalf("uncertain result classified as rejected: %+v", d)
++		}
++	}
++}
++
++func TestDrawingDiagnosticRoutesKeepExactModels(t *testing.T) {
++	a := &Account{Platform: "openai", Type: "oauth"}
++	for _, model := range []string{"gpt-image-2.5-flare", "gpt-image-2.5-sunburst"} {
++		if !IsDrawingImageTestModel(model) || DrawingImageTestRoute(a, model) != "codex_images" {
++			t.Fatal(model)
++		}
++		body, url, err := buildOpenAIImagesOAuthPayload(&OpenAIImagesRequest{Prompt: "blue circle", Model: model, Endpoint: openAIImagesGenerationsEndpoint}, model)
++		if err != nil || !strings.Contains(url, "/images/generations") || !strings.Contains(string(body), model) {
++			t.Fatalf("model changed: %s %s %v", body, url, err)
++		}
++	}
++	if DrawingImageTestRoute(a, "gpt-image-2.5") != "codex_responses" {
++		t.Fatal("generic model silently aliased")
++	}
++	if IsDrawingImageTestModel("untrusted-model") {
++		t.Fatal("unknown model allowed")
++	}
++}
+--- a/internal/handler/admin/drawing_test_jobs.go
++++ b/internal/handler/admin/drawing_test_jobs.go
+@@ -1,156 +1,386 @@
+ package admin
+ 
+ import (
+- "context"
+- "crypto/sha256"
+- "encoding/base64"
+- "encoding/hex"
+- "encoding/json"
+- "errors"
+- "fmt"
+- "net/http"
+- "os"
+- "path/filepath"
+- "regexp"
+- "sort"
+- "strings"
+- "sync"
+- "time"
+-
+- "github.com/gin-gonic/gin"
+- "github.com/Wei-Shaw/sub2api/internal/pkg/response"
++	"context"
++	"crypto/sha256"
++	"encoding/base64"
++	"encoding/hex"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"net/http"
++	"os"
++	"path/filepath"
++	"regexp"
++	"sort"
++	"strings"
++	"sync"
++	"time"
++
++	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
++	"github.com/Wei-Shaw/sub2api/internal/service"
++	"github.com/gin-gonic/gin"
+ )
+ 
+-var drawingJobID=regexp.MustCompile(`^[a-zA-Z0-9_-]{8,80}$`)
++var drawingJobID = regexp.MustCompile(`^[a-zA-Z0-9_-]{8,80}$`)
+ var drawingJobsMu sync.Mutex
+-var drawingRunning=map[string]bool{}
++var drawingRunning = map[string]bool{}
++
+ type drawingTestJob struct {
+- ID string `json:"id"`
+- Conversation string `json:"conversation_id"`
+- AccountID int64 `json:"account_id"`
+- Model string `json:"model"`
+- Prompt string `json:"prompt"`
+- Count int `json:"n"`
+- State string `json:"state"`
+- Created int64 `json:"created_at"`
+- Updated int64 `json:"updated_at"`
+- Images []string `json:"images"`
+- Error string `json:"error,omitempty"`
+- RequestHash string `json:"request_hash,omitempty"`
+-}
+-func drawingJobsRoot()string {p:=os.Getenv("SUB2API_DRAWING_TEST_DIR");if p==""{p="/app/data/drawing-tests"};return p}
+-func writeDrawingJob(job drawingTestJob)error {
+- b,e:=json.Marshal(job);if e!=nil{return e};p:=filepath.Join(drawingJobsRoot(),job.ID+".json");temp:=p+".tmp"
+- if e=os.WriteFile(temp,b,0600);e!=nil{return e};return os.Rename(temp,p)
+-}
+-func readDrawingJob(id string)(drawingTestJob,error){var job drawingTestJob;b,e:=os.ReadFile(filepath.Join(drawingJobsRoot(),id+".json"));if e==nil{e=json.Unmarshal(b,&job)};return job,e}
+-
+-func(h *AccountHandler) DrawingTestSubmit(c *gin.Context) {
+- if !drawingFullAdmin(c){return}
+- id:=c.Param("id");if !drawingJobID.MatchString(id){response.BadRequest(c,"任务编号无效");return}
+- var req struct {
+-  Conversation string `json:"conversation_id"`
+-  AccountID int64 `json:"account_id"`
+-  Model string `json:"model"`
+-  Prompt string `json:"prompt"`
+-  Count int `json:"n"`
+-  Size string `json:"size"`
+-  Quality string `json:"quality"`
+-  Images []string `json:"images"`
+- }
+- c.Request.Body=http.MaxBytesReader(c.Writer,c.Request.Body,50*1024*1024)
+- if c.ShouldBindJSON(&req)!=nil || !drawingJobID.MatchString(req.Conversation) || req.AccountID<=0 || req.Prompt=="" || len(req.Prompt)>32000 || req.Count<1 || req.Count>10 || len(req.Images)>8 {response.BadRequest(c,"请检查对话、账号、提示词和图片数量");return}
+- account,e:=h.adminService.GetAccount(c.Request.Context(),req.AccountID)
+- if e!=nil || account.Platform!="openai" || account.Type!="oauth" || account.IsCredentialShadow(){response.BadRequest(c,"请选择有效的 Web 或 Codex 账号");return}
+- if !account.IsModelSupported(req.Model){response.BadRequest(c,"账号模型配置不允许此模型");return}
+- if req.Model!="gpt-image-2" && req.Model!="gpt-image-2.5" && req.Model!="gpt-image-2.6"{response.BadRequest(c,"请选择已支持的图片模型");return}
+- if account.IsOpenAIWeb() && (req.Model!="gpt-image-2" || account.GetMappedModel(req.Model)!="gpt-image-2"){response.BadRequest(c,"Web 执行器目前只支持 gpt-image-2，请选择 Codex 账号测试其他模型");return}
+- for _,image:=range req.Images {
+-  if !drawingValidReference(image){response.BadRequest(c,"参考图必须是有效的 PNG、JPEG 或 WebP 文件，单张不超过 8 MB");return}
+- }
+- body:=map[string]any{"model":req.Model,"prompt":req.Prompt,"n":req.Count,"size":req.Size,"quality":req.Quality,"response_format":"b64_json","stream":false}
+- if len(req.Images)>0{images:=[]map[string]string{};for _,image:=range req.Images{images=append(images,map[string]string{"image_url":image})};body["images"]=images}
+- raw,e:=json.Marshal(body);if e!=nil{response.BadRequest(c,"参考图片无效");return}
+- hashBytes,_:=json.Marshal(req);digest:=sha256.Sum256(hashBytes);requestHash:=hex.EncodeToString(digest[:])
+- drawingJobsMu.Lock()
+- if existing,e:=readDrawingJob(id);e==nil {
+-  drawingJobsMu.Unlock();if existing.RequestHash!=requestHash{response.Error(c,409,"同一任务编号已提交其他内容，请先核对原任务");return};response.Success(c,existing);return
+- }else if !errors.Is(e,os.ErrNotExist){drawingJobsMu.Unlock();response.Error(c,409,"已有任务记录无法读取，未重复提交");return}
+- if e=os.MkdirAll(drawingJobsRoot(),0700);e!=nil{drawingJobsMu.Unlock();response.Error(c,500,"测试记录目录不可写");return}
+- job:=drawingTestJob{ID:id,Conversation:req.Conversation,AccountID:req.AccountID,Model:req.Model,Prompt:req.Prompt,Count:req.Count,State:"queued",Created:time.Now().Unix(),Updated:time.Now().Unix(),Images:[]string{}}
+- job.RequestHash=requestHash
+- if e=writeDrawingJob(job);e!=nil{drawingJobsMu.Unlock();response.Error(c,500,"无法保存测试任务，未提交生成");return}
+- drawingRunning[id]=true;drawingJobsMu.Unlock()
+- go h.runDrawingTest(job,raw,len(req.Images)>0)
+- response.Success(c,job)
+-}
+-
+-func drawingValidReference(value string)bool {
+- parts:=strings.SplitN(value,",",2);if len(parts)!=2 || len(parts[1])>12*1024*1024{return false}
+- mime:=strings.TrimSuffix(strings.TrimPrefix(parts[0],"data:"),";base64")
+- if parts[0]!="data:"+mime+";base64" || (mime!="image/png" && mime!="image/jpeg" && mime!="image/webp"){return false}
+- data,err:=base64.StdEncoding.DecodeString(parts[1]);return err==nil && len(data)>0 && len(data)<=8*1024*1024 && http.DetectContentType(data)==mime
+-}
+-
+-func(h *AccountHandler) runDrawingTest(job drawingTestJob,raw []byte,edit bool) {
+- defer func(){
+-  if recover()!=nil{job.State="unconfirmed";job.Error="测试执行中断，已保存结果保留；未自动重新提交";job.Updated=time.Now().Unix();_=writeDrawingJob(job)}
+-  drawingJobsMu.Lock();delete(drawingRunning,job.ID);drawingJobsMu.Unlock()
+- }()
+- ctx,cancel:=context.WithTimeout(context.Background(),time.Duration(job.Count)*20*time.Minute);defer cancel()
+- fail:=func(message string){job.State="failed";job.Error=message;job.Updated=time.Now().Unix();_=writeDrawingJob(job)}
+- account,e:=h.adminService.GetAccount(ctx,job.AccountID);if e!=nil{fail("账号不可用，未提交生成");return}
+- if h.concurrencyService==nil{fail("并发控制服务不可用，未提交生成");return}
+- slot,e:=h.concurrencyService.AcquireAccountSlot(ctx,account.ID,account.Concurrency)
+- if e!=nil || slot==nil || !slot.Acquired{fail("账号当前繁忙，请稍后新建测试");return};defer slot.ReleaseFunc()
+- job.State="running";job.Updated=time.Now().Unix();if e=writeDrawingJob(job);e!=nil{return}
+- var single map[string]any
+- if json.Unmarshal(raw,&single)!=nil{fail("任务参数无法读取，未提交生成");return}
+- single["n"]=1;singleRaw,_:=json.Marshal(single)
+- for index:=0;index<job.Count;index++ {
+- output,runErr:=h.accountTestService.RunDrawingImage(ctx,account,singleRaw,edit)
+-  var result struct {Data []struct{Base64 string `json:"b64_json"`} `json:"data"`; Error struct{Code string `json:"code"`} `json:"error"`}
+- savedBefore:=len(job.Images)
+- if json.Unmarshal(output,&result)==nil {
+-  for _,item:=range result.Data {
+-   if len(job.Images)>savedBefore{break};data,e:=base64.StdEncoding.DecodeString(item.Base64);if e!=nil || len(data)==0 || len(data)>25*1024*1024{continue}
+-   mime:=http.DetectContentType(data);ext:="";switch mime{case "image/png":ext="png";case "image/jpeg":ext="jpg";case "image/webp":ext="webp";case "image/gif":ext="gif"};if ext==""{continue}
+-   name:=fmt.Sprintf("%s-%d.%s",job.ID,index,ext);if e=os.WriteFile(filepath.Join(drawingJobsRoot(),name),data,0600);e!=nil{continue};job.Images=append(job.Images,name)
+-  }
+- }
+- job.Updated=time.Now().Unix()
+- // Persist each image before requesting another. A disk failure never causes
+- // further upstream consumption, and refreshes can display partial progress.
+- if e=writeDrawingJob(job);e!=nil{return}
+- if runErr!=nil || len(job.Images)==savedBefore {if drawingJobID.MatchString(result.Error.Code){job.Error="执行诊断："+result.Error.Code};break}
+- }
+- job.State="completed";if len(job.Images)>0 && len(job.Images)<job.Count{job.State="partial";if job.Error==""{job.Error="只保存了部分结果；未自动重新提交"}}
+- if len(job.Images)==0 {job.State="unconfirmed";if job.Error=="" {job.Error="未收到可确认的图片，请检查账号、额度和出口；未自动重新提交"}}
+- job.Updated=time.Now().Unix();_=writeDrawingJob(job)
+-}
+-
+-func(h *AccountHandler) DrawingTestList(c *gin.Context){
+- if !drawingFullAdmin(c){return}
+- entries,e:=os.ReadDir(drawingJobsRoot());if e!=nil && !os.IsNotExist(e){response.Error(c,500,"无法读取测试历史");return}
+- jobs:=[]drawingTestJob{}
+- drawingJobsMu.Lock();defer drawingJobsMu.Unlock()
+- for _,entry:=range entries{if filepath.Ext(entry.Name())!=".json"{continue};id:=entry.Name()[:len(entry.Name())-5];job,e:=readDrawingJob(id);if e!=nil{continue}
+-  if (job.State=="running" || job.State=="queued") && !drawingRunning[id] {job.State="unconfirmed";job.Error="服务重启前任务结果未确认，未自动重新提交";_=writeDrawingJob(job)}
+-  jobs=append(jobs,job)
+- }
+- sort.Slice(jobs,func(i,j int)bool{return jobs[i].Created>jobs[j].Created})
+- response.Success(c,gin.H{"items":jobs})
+-}
+-func(h *AccountHandler) DrawingTestImage(c *gin.Context){
+- if !drawingFullAdmin(c){return};name:=c.Param("name")
+- if !regexp.MustCompile(`^[a-zA-Z0-9_-]{8,80}-[0-9]+\.(png|jpg|webp|gif)$`).MatchString(name){response.BadRequest(c,"图片编号无效");return}
+- c.Header("Cache-Control","private, no-store");c.Header("X-Content-Type-Options","nosniff");c.File(filepath.Join(drawingJobsRoot(),name))
+-}
+-func(h *AccountHandler) DrawingTestDelete(c *gin.Context){
+- if !drawingFullAdmin(c){return};id:=c.Param("id");if !drawingJobID.MatchString(id){response.BadRequest(c,"任务编号无效");return}
+- drawingJobsMu.Lock();defer drawingJobsMu.Unlock();if drawingRunning[id]{response.Error(c,409,"任务仍在执行，完成后再删除");return}
+- job,e:=readDrawingJob(id);if e!=nil{response.Error(c,404,"任务不存在");return}
+- for _,name:=range job.Images{if filepath.Base(name)==name{_=os.Remove(filepath.Join(drawingJobsRoot(),name))}}
+- if e=os.Remove(filepath.Join(drawingJobsRoot(),id+".json"));e!=nil{response.Error(c,500,"删除失败");return};response.Success(c,gin.H{"deleted":true})
+-}
+-
++	ID           string   `json:"id"`
++	Conversation string   `json:"conversation_id"`
++	AccountID    int64    `json:"account_id"`
++	Model        string   `json:"model"`
++	Prompt       string   `json:"prompt"`
++	Count        int      `json:"n"`
++	State        string   `json:"state"`
++	Created      int64    `json:"created_at"`
++	Updated      int64    `json:"updated_at"`
++	Images       []string `json:"images"`
++	Error        string   `json:"error,omitempty"`
++	ErrorCode    string   `json:"error_code,omitempty"`
++	HTTPStatus   int      `json:"http_status,omitempty"`
++	RequestHash  string   `json:"request_hash,omitempty"`
++}
++
++func drawingJobsRoot() string {
++	p := os.Getenv("SUB2API_DRAWING_TEST_DIR")
++	if p == "" {
++		p = "/app/data/drawing-tests"
++	}
++	return p
++}
++func writeDrawingJob(job drawingTestJob) error {
++	b, e := json.Marshal(job)
++	if e != nil {
++		return e
++	}
++	p := filepath.Join(drawingJobsRoot(), job.ID+".json")
++	temp := p + ".tmp"
++	if e = os.WriteFile(temp, b, 0600); e != nil {
++		return e
++	}
++	return os.Rename(temp, p)
++}
++func readDrawingJob(id string) (drawingTestJob, error) {
++	var job drawingTestJob
++	b, e := os.ReadFile(filepath.Join(drawingJobsRoot(), id+".json"))
++	if e == nil {
++		e = json.Unmarshal(b, &job)
++	}
++	return job, e
++}
++
++func (h *AccountHandler) DrawingTestSubmit(c *gin.Context) {
++	if !drawingFullAdmin(c) {
++		return
++	}
++	id := c.Param("id")
++	if !drawingJobID.MatchString(id) {
++		response.BadRequest(c, "任务编号无效")
++		return
++	}
++	var req struct {
++		Conversation string   `json:"conversation_id"`
++		AccountID    int64    `json:"account_id"`
++		Model        string   `json:"model"`
++		Prompt       string   `json:"prompt"`
++		Count        int      `json:"n"`
++		Size         string   `json:"size"`
++		Quality      string   `json:"quality"`
++		Images       []string `json:"images"`
++	}
++	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 50*1024*1024)
++	if c.ShouldBindJSON(&req) != nil || !drawingJobID.MatchString(req.Conversation) || req.AccountID <= 0 || req.Prompt == "" || len(req.Prompt) > 32000 || req.Count < 1 || req.Count > 10 || len(req.Images) > 8 {
++		response.BadRequest(c, "请检查对话、账号、提示词和图片数量")
++		return
++	}
++	account, e := h.adminService.GetAccount(c.Request.Context(), req.AccountID)
++	if e != nil || account.Platform != "openai" || account.Type != "oauth" || account.IsCredentialShadow() {
++		response.BadRequest(c, "请选择有效的 Web 或 Codex 账号")
++		return
++	}
++	if !account.IsModelSupported(req.Model) {
++		response.BadRequest(c, "账号模型配置不允许此模型")
++		return
++	}
++	if !service.IsDrawingImageTestModel(req.Model) {
++		response.BadRequest(c, "请选择已支持的图片模型")
++		return
++	}
++	if account.IsOpenAIWeb() && (req.Model != "gpt-image-2" || account.GetMappedModel(req.Model) != "gpt-image-2") {
++		response.BadRequest(c, "Web 执行器目前只支持 gpt-image-2，请选择 Codex 账号测试其他模型")
++		return
++	}
++	for _, image := range req.Images {
++		if !drawingValidReference(image) {
++			response.BadRequest(c, "参考图必须是有效的 PNG、JPEG 或 WebP 文件，单张不超过 8 MB")
++			return
++		}
++	}
++	body := map[string]any{"model": req.Model, "prompt": req.Prompt, "n": req.Count, "size": req.Size, "quality": req.Quality, "response_format": "b64_json", "stream": false}
++	if len(req.Images) > 0 {
++		images := []map[string]string{}
++		for _, image := range req.Images {
++			images = append(images, map[string]string{"image_url": image})
++		}
++		body["images"] = images
++	}
++	raw, e := json.Marshal(body)
++	if e != nil {
++		response.BadRequest(c, "参考图片无效")
++		return
++	}
++	hashBytes, _ := json.Marshal(req)
++	digest := sha256.Sum256(hashBytes)
++	requestHash := hex.EncodeToString(digest[:])
++	drawingJobsMu.Lock()
++	if existing, e := readDrawingJob(id); e == nil {
++		drawingJobsMu.Unlock()
++		if existing.RequestHash != requestHash {
++			response.Error(c, 409, "同一任务编号已提交其他内容，请先核对原任务")
++			return
++		}
++		response.Success(c, existing)
++		return
++	} else if !errors.Is(e, os.ErrNotExist) {
++		drawingJobsMu.Unlock()
++		response.Error(c, 409, "已有任务记录无法读取，未重复提交")
++		return
++	}
++	if e = os.MkdirAll(drawingJobsRoot(), 0700); e != nil {
++		drawingJobsMu.Unlock()
++		response.Error(c, 500, "测试记录目录不可写")
++		return
++	}
++	job := drawingTestJob{ID: id, Conversation: req.Conversation, AccountID: req.AccountID, Model: req.Model, Prompt: req.Prompt, Count: req.Count, State: "queued", Created: time.Now().Unix(), Updated: time.Now().Unix(), Images: []string{}}
++	job.RequestHash = requestHash
++	if e = writeDrawingJob(job); e != nil {
++		drawingJobsMu.Unlock()
++		response.Error(c, 500, "无法保存测试任务，未提交生成")
++		return
++	}
++	drawingRunning[id] = true
++	drawingJobsMu.Unlock()
++	go h.runDrawingTest(job, raw, len(req.Images) > 0)
++	response.Success(c, job)
++}
++
++func drawingValidReference(value string) bool {
++	parts := strings.SplitN(value, ",", 2)
++	if len(parts) != 2 || len(parts[1]) > 12*1024*1024 {
++		return false
++	}
++	mime := strings.TrimSuffix(strings.TrimPrefix(parts[0], "data:"), ";base64")
++	if parts[0] != "data:"+mime+";base64" || (mime != "image/png" && mime != "image/jpeg" && mime != "image/webp") {
++		return false
++	}
++	data, err := base64.StdEncoding.DecodeString(parts[1])
++	return err == nil && len(data) > 0 && len(data) <= 8*1024*1024 && http.DetectContentType(data) == mime
++}
++
++func (h *AccountHandler) runDrawingTest(job drawingTestJob, raw []byte, edit bool) {
++	defer func() {
++		if recover() != nil {
++			job.State = "unconfirmed"
++			job.Error = "测试执行中断，已保存结果保留；未自动重新提交"
++			job.Updated = time.Now().Unix()
++			_ = writeDrawingJob(job)
++		}
++		drawingJobsMu.Lock()
++		delete(drawingRunning, job.ID)
++		drawingJobsMu.Unlock()
++	}()
++	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(job.Count)*20*time.Minute)
++	defer cancel()
++	fail := func(message string) {
++		job.State = "failed"
++		job.Error = message
++		job.Updated = time.Now().Unix()
++		_ = writeDrawingJob(job)
++	}
++	account, e := h.adminService.GetAccount(ctx, job.AccountID)
++	if e != nil {
++		fail("账号不可用，未提交生成")
++		return
++	}
++	if h.concurrencyService == nil {
++		fail("并发控制服务不可用，未提交生成")
++		return
++	}
++	slot, e := h.concurrencyService.AcquireAccountSlot(ctx, account.ID, account.Concurrency)
++	if e != nil || slot == nil || !slot.Acquired {
++		fail("账号当前繁忙，请稍后新建测试")
++		return
++	}
++	defer slot.ReleaseFunc()
++	job.State = "running"
++	job.Updated = time.Now().Unix()
++	if e = writeDrawingJob(job); e != nil {
++		return
++	}
++	var single map[string]any
++	if json.Unmarshal(raw, &single) != nil {
++		fail("任务参数无法读取，未提交生成")
++		return
++	}
++	single["n"] = 1
++	singleRaw, _ := json.Marshal(single)
++	rejected := false
++	for index := 0; index < job.Count; index++ {
++		output, runErr := h.accountTestService.RunDrawingImage(ctx, account, singleRaw, edit)
++		var result struct {
++			Data []struct {
++				Base64 string `json:"b64_json"`
++			} `json:"data"`
++			Error struct {
++				Code string `json:"code"`
++			} `json:"error"`
++		}
++		savedBefore := len(job.Images)
++		if json.Unmarshal(output, &result) == nil {
++			for _, item := range result.Data {
++				if len(job.Images) > savedBefore {
++					break
++				}
++				data, e := base64.StdEncoding.DecodeString(item.Base64)
++				if e != nil || len(data) == 0 || len(data) > 25*1024*1024 {
++					continue
++				}
++				mime := http.DetectContentType(data)
++				ext := ""
++				switch mime {
++				case "image/png":
++					ext = "png"
++				case "image/jpeg":
++					ext = "jpg"
++				case "image/webp":
++					ext = "webp"
++				case "image/gif":
++					ext = "gif"
++				}
++				if ext == "" {
++					continue
++				}
++				name := fmt.Sprintf("%s-%d.%s", job.ID, index, ext)
++				if e = os.WriteFile(filepath.Join(drawingJobsRoot(), name), data, 0600); e != nil {
++					continue
++				}
++				job.Images = append(job.Images, name)
++			}
++		}
++		job.Updated = time.Now().Unix()
++		// Persist each image before requesting another. A disk failure never causes
++		// further upstream consumption, and refreshes can display partial progress.
++		if e = writeDrawingJob(job); e != nil {
++			return
++		}
++		if runErr != nil || len(job.Images) == savedBefore {
++			var diagnostic *service.DrawingImageTestError
++			if errors.As(runErr, &diagnostic) {
++				job.Error = diagnostic.Message
++				job.ErrorCode = diagnostic.Code
++				job.HTTPStatus = diagnostic.HTTPStatus
++				rejected = diagnostic.Rejected
++			} else {
++				job.Error = "没有可确认的图片结果，请查看服务日志；未自动重新提交"
++				job.ErrorCode = "result_unconfirmed"
++			}
++			break
++		}
++	}
++	job.State = "completed"
++	if len(job.Images) > 0 && len(job.Images) < job.Count {
++		job.State = "partial"
++		if job.Error == "" {
++			job.Error = "只保存了部分结果；未自动重新提交"
++		}
++	}
++	if len(job.Images) == 0 {
++		job.State = "unconfirmed"
++		if rejected {
++			job.State = "failed"
++		}
++		if job.Error == "" {
++			job.Error = "未收到可确认的图片，请检查账号、额度和出口；未自动重新提交"
++		}
++	}
++	job.Updated = time.Now().Unix()
++	_ = writeDrawingJob(job)
++}
++
++func (h *AccountHandler) DrawingTestList(c *gin.Context) {
++	if !drawingFullAdmin(c) {
++		return
++	}
++	entries, e := os.ReadDir(drawingJobsRoot())
++	if e != nil && !os.IsNotExist(e) {
++		response.Error(c, 500, "无法读取测试历史")
++		return
++	}
++	jobs := []drawingTestJob{}
++	drawingJobsMu.Lock()
++	defer drawingJobsMu.Unlock()
++	for _, entry := range entries {
++		if filepath.Ext(entry.Name()) != ".json" {
++			continue
++		}
++		id := entry.Name()[:len(entry.Name())-5]
++		job, e := readDrawingJob(id)
++		if e != nil {
++			continue
++		}
++		if (job.State == "running" || job.State == "queued") && !drawingRunning[id] {
++			job.State = "unconfirmed"
++			job.Error = "服务重启前任务结果未确认，未自动重新提交"
++			_ = writeDrawingJob(job)
++		}
++		jobs = append(jobs, job)
++	}
++	sort.Slice(jobs, func(i, j int) bool { return jobs[i].Created > jobs[j].Created })
++	response.Success(c, gin.H{"items": jobs})
++}
++func (h *AccountHandler) DrawingTestImage(c *gin.Context) {
++	if !drawingFullAdmin(c) {
++		return
++	}
++	name := c.Param("name")
++	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{8,80}-[0-9]+\.(png|jpg|webp|gif)$`).MatchString(name) {
++		response.BadRequest(c, "图片编号无效")
++		return
++	}
++	c.Header("Cache-Control", "private, no-store")
++	c.Header("X-Content-Type-Options", "nosniff")
++	c.File(filepath.Join(drawingJobsRoot(), name))
++}
++func (h *AccountHandler) DrawingTestDelete(c *gin.Context) {
++	if !drawingFullAdmin(c) {
++		return
++	}
++	id := c.Param("id")
++	if !drawingJobID.MatchString(id) {
++		response.BadRequest(c, "任务编号无效")
++		return
++	}
++	drawingJobsMu.Lock()
++	defer drawingJobsMu.Unlock()
++	if drawingRunning[id] {
++		response.Error(c, 409, "任务仍在执行，完成后再删除")
++		return
++	}
++	job, e := readDrawingJob(id)
++	if e != nil {
++		response.Error(c, 404, "任务不存在")
++		return
++	}
++	for _, name := range job.Images {
++		if filepath.Base(name) == name {
++			_ = os.Remove(filepath.Join(drawingJobsRoot(), name))
++		}
++	}
++	if e = os.Remove(filepath.Join(drawingJobsRoot(), id+".json")); e != nil {
++		response.Error(c, 500, "删除失败")
++		return
++	}
++	response.Success(c, gin.H{"deleted": true})
++}
+--- a/internal/handler/admin/drawing_models.go
++++ b/internal/handler/admin/drawing_models.go
+@@ -1,38 +1,70 @@
+ package admin
+ 
+ import (
+- "path/filepath"
+- "os"
+- "strconv"
+- "strings"
+- "time"
++	"os"
++	"path/filepath"
++	"strconv"
++	"strings"
++	"time"
+ 
+- "github.com/gin-gonic/gin"
+- "github.com/Wei-Shaw/sub2api/internal/pkg/response"
++	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
++	"github.com/Wei-Shaw/sub2api/internal/service"
++	"github.com/gin-gonic/gin"
+ )
+ 
+-func(h *AccountHandler) DrawingModels(c *gin.Context){
+- if !drawingFullAdmin(c){return}
+- id,e:=strconv.ParseInt(c.Param("id"),10,64);if e!=nil{response.BadRequest(c,"账号编号无效");return}
+- account,e:=h.adminService.GetAccount(c.Request.Context(),id)
+- if e!=nil || account.Platform!="openai" || account.Type!="oauth" || account.IsCredentialShadow(){response.BadRequest(c,"账号不可用于绘图模型检查");return}
+- candidates:=[]gin.H{}
+- for _,model:=range []string{"gpt-image-2","gpt-image-2.5","gpt-image-2.6"}{
+-  adapterSupported:=!account.IsOpenAIWeb() || model=="gpt-image-2"
+-  candidates=append(candidates,gin.H{"id":model,"adapter_supported":adapterSupported,"account_allowed":account.IsModelSupported(model),"last_success_at":int64(0),"latest_test_at":int64(0),"latest_test_state":"untested"})
+- }
+- entries,_:=os.ReadDir(drawingJobsRoot())
+- for _,entry:=range entries{
+-  if filepath.Ext(entry.Name())!=".json"{continue};job,e:=readDrawingJob(strings.TrimSuffix(entry.Name(),".json"));if e!=nil || job.AccountID!=id{continue}
+-  for _,candidate:=range candidates{if candidate["id"]!=job.Model{continue};if job.Updated>candidate["latest_test_at"].(int64){candidate["latest_test_at"]=job.Updated;candidate["latest_test_state"]=job.State};if len(job.Images)>0 && job.Updated>candidate["last_success_at"].(int64){candidate["last_success_at"]=job.Updated}}
+- }
+- out:=gin.H{"image_choices":candidates,"catalog":account.Extra["drawing_model_catalog"],"note":"上游模型目录、执行器支持和真实生图结果分别记录；模型列出不代表有生图权限。"}
+- if c.Query("refresh")=="true" {
+-  models,e:=h.accountTestService.DrawingDiscoveredModels(c.Request.Context(),account)
+-  if e!=nil{out["discovery_error"]=e.Error()}else{
+-   catalog:=gin.H{"models":models,"checked_at":time.Now().Unix()};out["catalog"]=catalog
+-   if e=h.adminService.UpdateAccountExtra(c.Request.Context(),id,map[string]any{"drawing_model_catalog":catalog});e!=nil{out["discovery_error"]="目录已读取，但快照保存失败"}
+-  }
+- }
+- response.Success(c,out)
++func (h *AccountHandler) DrawingModels(c *gin.Context) {
++	if !drawingFullAdmin(c) {
++		return
++	}
++	id, e := strconv.ParseInt(c.Param("id"), 10, 64)
++	if e != nil {
++		response.BadRequest(c, "账号编号无效")
++		return
++	}
++	account, e := h.adminService.GetAccount(c.Request.Context(), id)
++	if e != nil || account.Platform != "openai" || account.Type != "oauth" || account.IsCredentialShadow() {
++		response.BadRequest(c, "账号不可用于绘图模型检查")
++		return
++	}
++	candidates := []gin.H{}
++	for _, model := range service.DrawingImageTestModels() {
++		adapterSupported := !account.IsOpenAIWeb() || model == "gpt-image-2"
++		candidates = append(candidates, gin.H{"id": model, "request_route": service.DrawingImageTestRoute(account, model), "mapped_model": account.GetMappedModel(model), "adapter_supported": adapterSupported, "account_allowed": account.IsModelSupported(model), "last_success_at": int64(0), "latest_test_at": int64(0), "latest_test_state": "untested"})
++	}
++	entries, _ := os.ReadDir(drawingJobsRoot())
++	for _, entry := range entries {
++		if filepath.Ext(entry.Name()) != ".json" {
++			continue
++		}
++		job, e := readDrawingJob(strings.TrimSuffix(entry.Name(), ".json"))
++		if e != nil || job.AccountID != id {
++			continue
++		}
++		for _, candidate := range candidates {
++			if candidate["id"] != job.Model {
++				continue
++			}
++			if job.Updated > candidate["latest_test_at"].(int64) {
++				candidate["latest_test_at"] = job.Updated
++				candidate["latest_test_state"] = job.State
++			}
++			if len(job.Images) > 0 && job.Updated > candidate["last_success_at"].(int64) {
++				candidate["last_success_at"] = job.Updated
++			}
++		}
++	}
++	out := gin.H{"image_choices": candidates, "catalog": account.Extra["drawing_model_catalog"], "note": "上游模型目录、执行器支持和真实生图结果分别记录；模型列出不代表有生图权限。"}
++	if c.Query("refresh") == "true" {
++		models, e := h.accountTestService.DrawingDiscoveredModels(c.Request.Context(), account)
++		if e != nil {
++			out["discovery_error"] = e.Error()
++		} else {
++			catalog := gin.H{"models": models, "checked_at": time.Now().Unix()}
++			out["catalog"] = catalog
++			if e = h.adminService.UpdateAccountExtra(c.Request.Context(), id, map[string]any{"drawing_model_catalog": catalog}); e != nil {
++				out["discovery_error"] = "目录已读取，但快照保存失败"
++			}
++		}
++	}
++	response.Success(c, out)
+ }

@@ -1,0 +1,22 @@
+{
+  "internal/service/drawing_generation.go": {
+    "before": "c15dbf6adbb08be6154e48e4d82cb997010d29ea00b0bf76b7f7c5915e2eb4b1",
+    "after": "d713eaa97b35a7a38e2c9c420e2a8b3cc2e03e0b77fa1f4cf647b3cc5ab0a4e8"
+  },
+  "internal/service/drawing_diagnostic.go": {
+    "before": null,
+    "after": "587dfacdc725ae2a38960f555441426d783ded6d52c3b45a516013ae05473147"
+  },
+  "internal/service/drawing_diagnostic_test.go": {
+    "before": null,
+    "after": "f01b2a8150248fa2b6f9f59a7c7ebe536a7e91797e6b15e6e617c2a0f8c3901e"
+  },
+  "internal/handler/admin/drawing_test_jobs.go": {
+    "before": "1a79422e665f23cede677560db643c7d37afd34c40e8c1b1322d711bfa5efb9e",
+    "after": "eef69e6903a4d25881654f600d3c4f3a84d674cfc79052918b36ab8d6665c2c2"
+  },
+  "internal/handler/admin/drawing_models.go": {
+    "before": "e2ca104058d26de28ffcb87cdb85d4ae319468a5e015d006e8ee06a970ed7623",
+    "after": "a0b753f24e83e6403c583750988b9ce08dfb9889d8b5089717002a6c003fe95a"
+  }
+}

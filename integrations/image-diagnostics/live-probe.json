@@ -1,0 +1,11 @@
+{
+  "id": "cbcde7fe-9828-4656-a6ba-15128085ae36",
+  "account_id": 940,
+  "model": "gpt-image-2.5-flare",
+  "state": "failed",
+  "error": "上游拒绝访问（HTTP 403），请核对账号权限及代理出口；未自动重试",
+  "error_code": "access_forbidden",
+  "http_status": 403,
+  "image_count": 0,
+  "generation_requests": 1
+}
